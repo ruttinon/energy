@@ -1,0 +1,199 @@
+{
+  "polling_interval": 3,
+  "registers": [
+    {
+      "key": "Voltage_L1",
+      "address": 6,
+      "function": 3,
+      "datatype": "float32_ABCD_be",
+      "words": 2,
+      "unit": "V",
+      "description": "แรงดันไฟฟ้าเฟส L1 ต่อ Neutral"
+    },
+    {
+      "key": "Voltage_L2",
+      "address": 8,
+      "function": 3,
+      "datatype": "float32_ABCD_be",
+      "words": 2,
+      "unit": "V",
+      "description": "แรงดันไฟฟ้าเฟส L2 ต่อ Neutral"
+    },
+    {
+      "key": "Voltage_L3",
+      "address": 10,
+      "function": 3,
+      "datatype": "float32_ABCD_be",
+      "words": 2,
+      "unit": "V",
+      "description": "แรงดันไฟฟ้าเฟส L3 ต่อ Neutral"
+    },
+    {
+      "key": "Voltage_L1L2",
+      "address": 12,
+      "function": 3,
+      "datatype": "float32_ABCD_be",
+      "words": 2,
+      "unit": "V",
+      "description": "แรงดันไฟฟ้าระหว่างเฟส L1-L2"
+    },
+    {
+      "key": "Voltage_L2L3",
+      "address": 14,
+      "function": 3,
+      "datatype": "float32_ABCD_be",
+      "words": 2,
+      "unit": "V",
+      "description": "แรงดันไฟฟ้าระหว่างเฟส L2-L3"
+    },
+    {
+      "key": "Voltage_L3L1",
+      "address": 16,
+      "function": 3,
+      "datatype": "float32_ABCD_be",
+      "words": 2,
+      "unit": "V",
+      "description": "แรงดันไฟฟ้าระหว่างเฟส L3-L1"
+    },
+    {
+      "key": "Current_L1",
+      "address": 18,
+      "function": 3,
+      "datatype": "float32_ABCD_be",
+      "words": 2,
+      "unit": "A",
+      "description": "กระแสไฟฟ้าเฟส L1"
+    },
+    {
+      "key": "Current_L2",
+      "address": 20,
+      "function": 3,
+      "datatype": "float32_ABCD_be",
+      "words": 2,
+      "unit": "A",
+      "description": "กระแสไฟฟ้าเฟส L2"
+    },
+    {
+      "key": "Current_L3",
+      "address": 22,
+      "function": 3,
+      "datatype": "float32_ABCD_be",
+      "words": 2,
+      "unit": "A",
+      "description": "กระแสไฟฟ้าเฟส L3"
+    },
+    {
+      "key": "ActivePower_L1",
+      "address": 24,
+      "function": 3,
+      "datatype": "float32_ABCD_be",
+      "words": 2,
+      "unit": "kW",
+      "description": "กำลังไฟฟ้าจริงเฟส L1"
+    },
+    {
+      "key": "ActivePower_L2",
+      "address": 26,
+      "function": 3,
+      "datatype": "float32_ABCD_be",
+      "words": 2,
+      "unit": "kW",
+      "description": "กำลังไฟฟ้าจริงเฟส L2"
+    },
+    {
+      "key": "ActivePower_L3",
+      "address": 28,
+      "function": 3,
+      "datatype": "float32_ABCD_be",
+      "words": 2,
+      "unit": "kW",
+      "description": "กำลังไฟฟ้าจริงเฟส L3"
+    },
+    {
+      "key": "ActivePower_Total",
+      "address": 30,
+      "function": 3,
+      "datatype": "float32_ABCD_be",
+      "words": 2,
+      "unit": "kW",
+      "description": "กำลังไฟฟ้าจริงรวมทั้งหมด"
+    },
+    {
+      "key": "ReactivePower_Total",
+      "address": 38,
+      "function": 3,
+      "datatype": "float32_ABCD_be",
+      "words": 2,
+      "unit": "kvar",
+      "description": "กำลังไฟฟ้ารีแอกทีฟรวมทั้งหมด"
+    },
+    {
+      "key": "ApparentPower_Total",
+      "address": 46,
+      "function": 3,
+      "datatype": "float32_ABCD_be",
+      "words": 2,
+      "unit": "kVA",
+      "description": "กำลังไฟฟ้าปรากฏรวมทั้งหมด"
+    },
+    {
+      "key": "PowerFactor_L1",
+      "address": 48,
+      "function": 3,
+      "datatype": "float32_ABCD_be",
+      "words": 2,
+      "description": "เพาเวอร์แฟกเตอร์เฟส L1"
+    },
+    {
+      "key": "PowerFactor_L2",
+      "address": 50,
+      "function": 3,
+      "datatype": "float32_ABCD_be",
+      "words": 2,
+      "description": "เพาเวอร์แฟกเตอร์เฟส L2"
+    },
+    {
+      "key": "PowerFactor_L3",
+      "address": 52,
+      "function": 3,
+      "datatype": "float32_ABCD_be",
+      "words": 2,
+      "description": "เพาเวอร์แฟกเตอร์เฟส L3"
+    },
+    {
+      "key": "PowerFactor_Total",
+      "address": 54,
+      "function": 3,
+      "datatype": "float32_ABCD_be",
+      "words": 2,
+      "description": "เพาเวอร์แฟกเตอร์รวม"
+    },
+    {
+      "key": "Frequency",
+      "address": 56,
+      "function": 3,
+      "datatype": "float32_ABCD_be",
+      "words": 2,
+      "unit": "Hz",
+      "description": "ความถี่ไฟฟ้า"
+    },
+    {
+      "key": "ActiveEnergy_kWh",
+      "address": 58,
+      "function": 3,
+      "datatype": "float32_ABCD_be",
+      "words": 2,
+      "unit": "kWh",
+      "description": "พลังงานไฟฟ้าจริง (นำเข้า)"
+    },
+    {
+      "key": "Generated_kWh",
+      "address": 60,
+      "function": 3,
+      "datatype": "float32_ABCD_be",
+      "words": 2,
+      "unit": "kWh",
+      "description": "พลังงานไฟฟ้าจริง (ส่งออก)"
+    }
+  ]
+}

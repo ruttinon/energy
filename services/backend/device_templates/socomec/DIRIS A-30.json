@@ -1,0 +1,135 @@
+{
+  "polling_interval": 3,
+  "registers": [
+    { 
+      "key": "Voltage_L1",
+      "address": 782,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 10,
+      "unit": "V",
+      "description": "แรงดันไฟฟ้าเฟส L1 ต่อ Neutral (หน่วยโวลต์)"
+    },
+    { 
+      "key": "Voltage_L2",
+      "address": 784,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 10,
+      "unit": "V",
+      "description": "แรงดันไฟฟ้าเฟส L2 ต่อ Neutral (หน่วยโวลต์)"
+    },
+    { 
+      "key": "Voltage_L3",
+      "address": 786,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 10,
+      "unit": "V",
+      "description": "แรงดันไฟฟ้าเฟส L3 ต่อ Neutral (หน่วยโวลต์)"
+    },
+    { 
+      "key": "Voltage_L1L2",
+      "address": 776,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 10,
+      "unit": "V",
+      "description": "แรงดันไฟฟ้าเฟส L1 ต่อ L2 (หน่วยโวลต์)"
+    },
+    { 
+      "key": "Voltage_L2L3",
+      "address": 778,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 10,
+      "unit": "V",
+      "description": "แรงดันไฟฟ้าเฟส L2 ต่อ L3 (หน่วยโวลต์)"
+    },
+    { 
+      "key": "Voltage_L3L1",
+      "address": 780,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 10,
+      "unit": "V",
+      "description": "แรงดันไฟฟ้าเฟส L3 ต่อ L1 (หน่วยโวลต์)"
+    },
+    { 
+      "key": "Current_L1",
+      "address": 768,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 1000,
+      "unit": "A",
+      "description": "กระแสไฟฟ้าเฟส L1 (แอมป์)"
+    },
+    { 
+      "key": "Current_L2",
+      "address": 770,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 1000,
+      "unit": "A",
+      "description": "กระแสไฟฟ้าเฟส L2 (แอมป์)"
+    },
+    { 
+      "key": "Current_L3",
+      "address": 772,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 1000,
+      "unit": "A",
+      "description": "กระแสไฟฟ้าเฟส L3 (แอมป์)"
+    },
+    { 
+      "key": "Frequency",
+      "address": 788,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 100,
+      "unit": "Hz",
+      "description": "ความถี่ไฟฟ้ากระแสสลับ (เฮิร์ตซ์)"
+    },
+    { 
+      "key": "ActivePower_Total",
+      "address": 790,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 100,
+      "unit": "kW",
+      "description": "กำลังไฟฟ้าจริงรวม (กิโลวัตต์)"
+    },
+    { 
+      "key": "ReactivePower_Total",
+      "address": 792,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 100,
+      "unit": "kvar",
+      "description": "กำลังไฟฟ้ารีแอคทีฟรวม (กิโลวาร์)"
+    },
+    { 
+      "key": "ActivePower_L1",
+      "address": 798,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 100,
+      "unit": "kW",
+      "description": "กำลังไฟฟ้าจริงเฟส L1 (กิโลวัตต์)"
+    }
+  ]
+}

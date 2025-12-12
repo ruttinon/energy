@@ -1,0 +1,68 @@
+{
+  "version": "1.0",
+  "project_id": "CPRAM-639ec8",
+  "converters": [
+    {
+      "id": 1,
+      "type": "converter",
+      "protocol": "modbus_tcp",
+      "name": "1",
+      "description": "",
+      "settings": {
+        "host": "61.91.56.190",
+        "port": 5502
+      },
+      "driver": "Generic_ModbusTCP.json",
+      "devices": [
+        {
+          "id": 5,
+          "type": "meter",
+          "manufacturer": "socomec",
+          "model": "DIRIS A-40",
+          "name": "DIRIS A-40",
+          "template_ref": "/services/backend/device_templates/socomec/DIRIS A-40.json",
+          "template": "socomec/DIRIS A-40",
+          "driver": "DIRIS A-40.json",
+          "parent": 1,
+          "address": 1,
+          "modbus_slave": 1,
+          "modbus_ip": "61.91.56.190",
+          "modbus_port": 5502,
+          "polling_interval": 3,
+          "description": ""
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "converter",
+      "protocol": "tcp",
+      "name": "TCP Driver",
+      "description": "",
+      "settings": {
+        "host": "61.91.56.190",
+        "port": 10001
+      },
+      "driver": "Generic_TCP.json",
+      "devices": [
+        {
+          "id": 6,
+          "type": "meter",
+          "manufacturer": "circutor",
+          "model": "CVM-C4",
+          "name": "CVM-C4",
+          "template_ref": "/services/backend/device_templates/circutor/CVM-C4.json",
+          "template": "circutor/CVM-C4",
+          "driver": "CVM-C4.json",
+          "parent": 3,
+          "address": 1,
+          "modbus_slave": 15,
+          "modbus_ip": "61.91.56.190",
+          "modbus_port": 10001,
+          "polling_interval": 3,
+          "description": ""
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Billing Admin | AE System</title>
+  
+  <!-- Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="billing_admin.css">
+</head>
+<body>
+
+<div class="app-container">
+
+  <!-- HEADER -->
+  <header class="app-header">
+    <div class="logo-section">
+      <div class="logo-icon">⚡</div>
+      <div class="logo-text">
+        <h1>AE BILLING</h1>
+        <p>Energy Management System</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-secondary" onclick="openTemplateManager()">
+        🎨 จัดการเทมเพลต
+      </button>
+      <button class="btn btn-secondary" onclick="location.reload()">
+        🔄 รีเฟรช
+      </button>
+    </div>
+  </header>
+
+  <!-- STATS GRID -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">พลังงานวันนี้</div>
+      <div class="stat-value">
+        <span id="sumTodayUnit">0.000</span>
+        <span class="stat-unit">kWh</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">ค่าไฟวันนี้</div>
+      <div class="stat-value">
+        <span id="sumTodayMoney">0.00</span>
+        <span class="stat-unit">บาท</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">พลังงานเดือนนี้</div>
+      <div class="stat-value">
+        <span id="sumMonthUnit">0.000</span>
+        <span class="stat-unit">kWh</span>
+      </div>
+    </div>
+    <div class="stat-card highlight">
+      <div class="stat-label">ค่าไฟเดือนนี้</div>
+      <div class="stat-value">
+        <span id="sumMonthMoney">0.00</span>
+        <span class="stat-unit">บาท</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN GRID -->
+  <div class="main-grid">
+    
+    <!-- CONTROL PANEL (SIDEBAR) -->
+    <div class="control-panel">
+      
+      <!-- PRICE SECTION -->
+      <div class="price-section">
+        <h3>💰 ราคาค่าไฟ</h3>
+        <div class="price-input-group">
+          <input type="number" id="priceInput" placeholder="บาท/หน่วย" step="0.01">
+          <button class="btn btn-primary btn-icon" onclick="savePrice()" title="บันทึก">✓</button>
+        </div>
+      </div>
+
+      <!-- EXPORT SECTION -->
+      <div class="export-section">
+        <h3>📄 ส่งออก PDF</h3>
+        <div class="export-buttons">
+
+  <!-- GROUP 1: SUMMARY REPORT -->
+  <h4 style="margin: 10px 0 6px; color: #bbb;">📊 สรุปผลการใช้ไฟ</h4>
+
+  <button class="export-btn" onclick="exportSummary('day')">
+    <div class="icon">📅</div>
+    <div class="text">
+      รายวัน
+      <span>สรุปเฉพาะวันนี้</span>
+    </div>
+  </button>
+
+  <button class="export-btn" onclick="exportSummary('month')">
+    <div class="icon">🗓️</div>
+    <div class="text">
+      รายเดือน
+      <span>สรุปผลใช้งานทั้งเดือน</span>
+    </div>
+  </button>
+
+  <button class="export-btn" onclick="exportSummary('year')">
+    <div class="icon">📆</div>
+    <div class="text">
+      รายปี
+      <span>สรุปการใช้พลังงานทั้งปี</span>
+    </div>
+  </button>
+
+
+
+  <!-- GROUP 2: MERGED REPORT -->
+  <h4 style="margin: 20px 0 6px; color: #bbb;">📚 รายงานรวม (Summary + ทุกบิล)</h4>
+
+  <button class="export-btn primary" onclick="exportMerged('day')">
+    <div class="icon">📄</div>
+    <div class="text">
+      รายวัน
+      <span>รวมสรุป + บิลทุกอุปกรณ์</span>
+    </div>
+  </button>
+
+  <button class="export-btn primary" onclick="exportMerged('month')">
+    <div class="icon">📘</div>
+    <div class="text">
+      รายเดือน
+      <span>รวมทั้งเดือน + ทุกบิล</span>
+    </div>
+  </button>
+
+  <button class="export-btn primary" onclick="exportMerged('year')">
+    <div class="icon">📙</div>
+    <div class="text">
+      รายปี
+      <span>รวมทั้งปี + ทุกบิล</span>
+    </div>
+  </button>
+
+</div>
+
+      </div>
+
+    </div>
+
+    <!-- CHART SECTION -->
+    <div class="chart-section">
+      <div class="card-header">
+        <div class="card-title">
+          <div class="icon">📈</div>
+          กราฟการใช้พลังงาน
+        </div>
+        <div class="chart-tabs">
+          <button class="chart-tab active" data-range="day">รายวัน</button>
+          <button class="chart-tab" data-range="month">รายเดือน</button>
+          <button class="chart-tab" data-range="year">รายปี</button>
+        </div>
+      </div>
+      <div class="chart-container">
+        <canvas id="energyChart"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- TABS NAVIGATION -->
+  <div class="tabs-section">
+    <div class="tabs-nav">
+      <button class="tab-btn active" data-tab="tabDevices">
+        💡 รายเครื่อง
+        <span class="badge" id="deviceCount">0</span>
+      </button>
+      <button class="tab-btn" data-tab="tabConvertors">
+        ⚙️ รายกลุ่ม
+        <span class="badge" id="convertorCount">0</span>
+      </button>
+      <button class="tab-btn" data-tab="tabTotal">
+        📦 สรุปรวม
+      </button>
+    </div>
+  </div>
+
+  <!-- TABLE: DEVICES -->
+  <div id="tabDevices" class="tabContent">
+    <div class="table-card fade-in">
+      <div class="table-header">
+        <div class="table-title">รายการอุปกรณ์ทั้งหมด</div>
+        <div class="table-actions">
+          <button class="btn btn-secondary" onclick="loadDevicesTable()">🔄 รีเฟรช</button>
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>อุปกรณ์</th>
+            <th>มิเตอร์ก่อนหน้า</th>
+            <th>มิเตอร์ปัจจุบัน</th>
+            <th>ใช้วันนี้ (kWh)</th>
+            <th>ค่าไฟวันนี้</th>
+            <th>อัปเดตล่าสุด</th>
+            <th>ออกบิล</th>
+          </tr>
+        </thead>
+        <tbody id="tbDevicesBody">
+          <tr><td colspan="7" class="text-muted" style="text-align:center;padding:40px;">กำลังโหลด...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TABLE: CONVERTORS -->
+  <div id="tabConvertors" class="tabContent hidden">
+    <div class="table-card fade-in">
+      <div class="table-header">
+        <div class="table-title">กลุ่ม Convertor</div>
+        <div class="table-actions">
+          <button class="btn btn-secondary" onclick="loadConvertorTable()">🔄 รีเฟรช</button>
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Convertor</th>
+            <th>อุปกรณ์ในกลุ่ม</th>
+            <th>ใช้วันนี้ (kWh)</th>
+            <th>ค่าไฟวันนี้</th>
+            <th>ใช้เดือนนี้ (kWh)</th>
+            <th>ค่าไฟเดือนนี้</th>
+            <th>ออกบิล</th>
+          </tr>
+        </thead>
+        <tbody id="tbConvertorsBody">
+          <tr><td colspan="7" class="text-muted" style="text-align:center;padding:40px;">กำลังโหลด...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TABLE: TOTAL -->
+  <div id="tabTotal" class="tabContent hidden">
+    <div class="table-card fade-in">
+      <div class="table-header">
+        <div class="table-title">สรุปรวมทั้งระบบ</div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>ประเภท</th>
+            <th>พลังงาน (kWh)</th>
+            <th>ค่าใช้จ่าย (บาท)</th>
+          </tr>
+        </thead>
+        <tbody id="tbTotalBody">
+          <tr><td colspan="3" class="text-muted" style="text-align:center;padding:40px;">กำลังโหลด...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- TEMPLATE CHOOSER MODAL -->
+<div id="templateModal" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>📄 เลือกเทมเพลต</h2>
+      <button class="modal-close" onclick="closeTemplateModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="templateList"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeTemplateModal()">ยกเลิก</button>
+    </div>
+  </div>
+</div>
+
+<!-- TEMPLATE MANAGER MODAL -->
+<div id="templateManager" class="modal-overlay">
+  <div class="modal" style="max-width:600px;">
+    <div class="modal-header">
+      <h2>🎨 จัดการเทมเพลต</h2>
+      <button class="modal-close" onclick="closeTemplateManager()">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="templateManagerList"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeTemplateManager()">ปิด</button>
+      <button class="btn btn-primary" onclick="createNewTemplate()">➕ สร้างเทมเพลตใหม่</button>
+    </div>
+  </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- Billing JS -->
+<script src="billing_admin.js"></script>
+
+</body>
+</html>

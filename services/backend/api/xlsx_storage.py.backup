@@ -1,0 +1,445 @@
+import os
+from datetime import datetime, timedelta
+from openpyxl import Workbook, load_workbook
+import threading
+
+_WB_LOCK = threading.RLock()
+_LAST_ARCHIVE_TIME = {}
+
+print("[XLSX_STORAGE] module loaded")
+
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+PROJECTS_ROOT = os.path.join(ROOT, 'projects')
+
+def get_data_dir(project_id: str):
+    """projects/CPRAM-639ec8/data/"""
+    data_dir = os.path.join(PROJECTS_ROOT, project_id, 'data')
+    os.makedirs(data_dir, exist_ok=True)
+    return data_dir
+
+def get_monthly_file(project_id: str, year: str, month: str):
+    """projects/CPRAM-639ec8/data/2025_01.xlsx"""
+    data_dir = get_data_dir(project_id)
+    return os.path.join(data_dir, f"{year}_{month}.xlsx")
+
+READINGS_HEADERS = ['date', 'time', 'device_id', 'device_name', 'key', 'value', 'unit']
+HISTORICAL_HEADERS = ['timestamp', 'device_id', 'device_name', 'key', 'value', 'unit', 'interval_minutes']
+SUMMARY_HEADERS = ['device_name', 'key', 'unit', 'readings_count', 'sum', 'avg', 'min', 'max']
+ALERTS_HEADERS = ['timestamp', 'device_id', 'device_name', 'alert_type', 'message', 'resolved']
+
+def ensure_sheets(filepath: str):
+    """สร้างไฟล์ Excel พร้อม 4 sheets - WITH CORRUPTION RECOVERY"""
+    try:
+        if os.path.exists(filepath):
+            try:
+                wb = load_workbook(filepath)
+                # ตรวจสอบว่ามี sheets ครบหรือไม่
+                for name in ['Readings', 'Historical', 'Summary', 'Alerts']:
+                    if name not in wb.sheetnames:
+                        ws = wb.create_sheet(name)
+                        if name == 'Readings':
+                            ws.append(READINGS_HEADERS)
+                        elif name == 'Historical':
+                            ws.append(HISTORICAL_HEADERS)
+                        elif name == 'Summary':
+                            ws.append(SUMMARY_HEADERS)
+                        elif name == 'Alerts':
+                            ws.append(ALERTS_HEADERS)
+                wb.save(filepath)
+                wb.close()
+                return
+            except Exception as e:
+                # ไฟล์เสีย - ลบและสร้างใหม่
+                print(f"[XLSX] Corrupted file detected, recreating: {filepath} ({e})")
+                try:
+                    os.remove(filepath)
+                except:
+                    pass
+        
+        # สร้างไฟล์ใหม่
+        wb = Workbook()
+        wb.remove(wb.active)
+        
+        ws = wb.create_sheet('Readings')
+        ws.append(READINGS_HEADERS)
+        
+        ws = wb.create_sheet('Historical')
+        ws.append(HISTORICAL_HEADERS)
+        
+        ws = wb.create_sheet('Summary')
+        ws.append(SUMMARY_HEADERS)
+        
+        ws = wb.create_sheet('Alerts')
+        ws.append(ALERTS_HEADERS)
+        
+        wb.save(filepath)
+        wb.close()
+        print(f"[XLSX] Created new file: {filepath}")
+        
+    except Exception as e:
+        print(f"[ERROR] ensure_sheets: {e}")
+
+def append_row(filepath: str, sheet_name: str, row_data: dict, headers: list):
+    """เพิ่มแถวข้อมูล"""
+    try:
+        with _WB_LOCK:
+            ensure_sheets(filepath)
+            wb = load_workbook(filepath)
+            ws = wb[sheet_name]
+            row = [row_data.get(h, '') for h in headers]
+            ws.append(row)
+            wb.save(filepath)
+            wb.close()
+    except Exception as e:
+        print(f"[ERROR] append_row {sheet_name}: {e}")
+
+def save_reading(project_id: str, device_id: str, device_name: str, key: str, value, unit: str):
+    """บันทึก realtime reading + auto-archive ทุก 15 นาที"""
+    now = datetime.now()
+    filepath = get_monthly_file(project_id, now.strftime('%Y'), now.strftime('%m'))
+    
+    row_data = {
+        'date': now.strftime('%Y-%m-%d'),
+        'time': now.strftime('%H:%M:%S'),
+        'device_id': device_id,
+        'device_name': device_name,
+        'key': key,
+        'value': value,
+        'unit': unit
+    }
+    append_row(filepath, 'Readings', row_data, READINGS_HEADERS)
+    
+    last_time = _LAST_ARCHIVE_TIME.get(project_id, now - timedelta(minutes=20))
+    if (now - last_time).total_seconds() >= 15 * 60:
+        archive_readings_to_historical(project_id)
+        _LAST_ARCHIVE_TIME[project_id] = now
+
+def save_readings_batch(project_id: str, readings_list: list):
+    now = datetime.now()
+    filepath = get_monthly_file(project_id, now.strftime('%Y'), now.strftime('%m'))
+    try:
+        with _WB_LOCK:
+            ensure_sheets(filepath)
+            wb = load_workbook(filepath)
+            ws = wb['Readings']
+            for r in readings_list:
+                row_data = {
+                    'date': now.strftime('%Y-%m-%d'),
+                    'time': now.strftime('%H:%M:%S'),
+                    'device_id': r.get('device_id'),
+                    'device_name': r.get('device_name'),
+                    'key': r.get('key'),
+                    'value': r.get('value'),
+                    'unit': r.get('unit', '')
+                }
+                ws.append([row_data.get(h, '') for h in READINGS_HEADERS])
+            wb.save(filepath)
+            wb.close()
+        last_time = _LAST_ARCHIVE_TIME.get(project_id, now - timedelta(minutes=20))
+        if (now - last_time).total_seconds() >= 15 * 60:
+            archive_readings_to_historical(project_id)
+            _LAST_ARCHIVE_TIME[project_id] = now
+    except Exception as e:
+        print(f"[ERROR] save_readings_batch: {e}")
+
+def archive_readings_to_historical(project_id: str):
+    """ย้ายข้อมูลจาก Readings → Historical แล้วลบ Readings"""
+    try:
+        now = datetime.now()
+        filepath = get_monthly_file(project_id, now.strftime('%Y'), now.strftime('%m'))
+        
+        if not os.path.exists(filepath):
+            return
+        
+        with _WB_LOCK:
+            wb = load_workbook(filepath)
+            ws_readings = wb['Readings']
+            ws_historical = wb['Historical']
+            
+            rows_to_archive = []
+            for row in ws_readings.iter_rows(min_row=2, values_only=True):
+                if row and row[0]:
+                    rows_to_archive.append(row)
+            
+            for date_val, time_val, device_id, device_name, key, value, unit in rows_to_archive:
+                try:
+                    timestamp_str = f"{date_val}T{time_val}"
+                    row_data = {
+                        'timestamp': timestamp_str,
+                        'device_id': device_id,
+                        'device_name': device_name,
+                        'key': key,
+                        'value': value,
+                        'unit': unit,
+                        'interval_minutes': 15
+                    }
+                    row = [row_data.get(h, '') for h in HISTORICAL_HEADERS]
+                    ws_historical.append(row)
+                except Exception as e:
+                    print(f"[ERROR] archive row: {e}")
+            
+            while ws_readings.max_row > 1:
+                ws_readings.delete_rows(2)
+            
+            wb.save(filepath)
+            wb.close()
+            
+            print(f"[XLSX] Archived {len(rows_to_archive)} rows: {project_id}")
+    except Exception as e:
+        print(f"[ERROR] archive_readings_to_historical: {e}")
+
+def save_historical_reading(project_id: str, device_id: str, device_name: str, key: str, value, unit: str, timestamp: str = None, interval_minutes: int = 15):
+    """บันทึก historical reading โดยตรง"""
+    now = datetime.now()
+    filepath = get_monthly_file(project_id, now.strftime('%Y'), now.strftime('%m'))
+    
+    row_data = {
+        'timestamp': timestamp or now.isoformat(),
+        'device_id': device_id,
+        'device_name': device_name,
+        'key': key,
+        'value': value,
+        'unit': unit,
+        'interval_minutes': interval_minutes
+    }
+    append_row(filepath, 'Historical', row_data, HISTORICAL_HEADERS)
+
+def save_alert(project_id: str, device_id: str, device_name: str, alert_type: str, message: str):
+    """บันทึก alert"""
+    now = datetime.now()
+    filepath = get_monthly_file(project_id, now.strftime('%Y'), now.strftime('%m'))
+    
+    row_data = {
+        'timestamp': now.isoformat(),
+        'device_id': device_id,
+        'device_name': device_name,
+        'alert_type': alert_type,
+        'message': message,
+        'resolved': 'N'
+    }
+    append_row(filepath, 'Alerts', row_data, ALERTS_HEADERS)
+
+def save_device_status(project_id: str, device_id: str, device_name: str, status: str, last_reading: str):
+    """บันทึก device status - ไม่ต้องทำอะไร"""
+    pass
+
+def generate_monthly_summary(project_id: str, year: str, month: str):
+    """สรุป Readings + Historical → Summary sheet"""
+    filepath = get_monthly_file(project_id, year, month)
+    if not os.path.exists(filepath):
+        return
+    
+    try:
+        with _WB_LOCK:
+            wb = load_workbook(filepath)
+            ws_readings = wb['Readings']
+            ws_historical = wb['Historical']
+            ws_summary = wb['Summary']
+            
+            summary_data = {}
+            
+            # อ่าน Readings
+            for row in ws_readings.iter_rows(min_row=2, values_only=True):
+                if not row or not row[0]:
+                    continue
+                date, time_val, device_id, device_name, key, value, unit = row
+                try:
+                    value = float(value)
+                except:
+                    continue
+                key_name = f"{device_name}.{key}"
+                if key_name not in summary_data:
+                    summary_data[key_name] = {'device_name': device_name, 'key': key, 'unit': unit,
+                                             'count': 0, 'sum': 0, 'min': float('inf'), 'max': float('-inf')}
+                summary_data[key_name]['count'] += 1
+                summary_data[key_name]['sum'] += value
+                summary_data[key_name]['min'] = min(summary_data[key_name]['min'], value)
+                summary_data[key_name]['max'] = max(summary_data[key_name]['max'], value)
+            
+            # อ่าน Historical
+            for row in ws_historical.iter_rows(min_row=2, values_only=True):
+                if not row or not row[0]:
+                    continue
+                timestamp, device_id, device_name, key, value, unit, interval = row
+                try:
+                    value = float(value)
+                except:
+                    continue
+                key_name = f"{device_name}.{key}"
+                if key_name not in summary_data:
+                    summary_data[key_name] = {'device_name': device_name, 'key': key, 'unit': unit,
+                                             'count': 0, 'sum': 0, 'min': float('inf'), 'max': float('-inf')}
+                summary_data[key_name]['count'] += 1
+                summary_data[key_name]['sum'] += value
+                summary_data[key_name]['min'] = min(summary_data[key_name]['min'], value)
+                summary_data[key_name]['max'] = max(summary_data[key_name]['max'], value)
+            
+            # ลบ Summary เก่า
+            while ws_summary.max_row > 1:
+                ws_summary.delete_rows(2)
+            
+            # เขียน Summary ใหม่
+            for key, data in summary_data.items():
+                avg = data['sum'] / data['count'] if data['count'] > 0 else 0
+                row_data = {
+                    'device_name': data['device_name'],
+                    'key': data['key'],
+                    'unit': data['unit'],
+                    'readings_count': data['count'],
+                    'sum': round(data['sum'], 2),
+                    'avg': round(avg, 2),
+                    'min': round(data['min'], 2),
+                    'max': round(data['max'], 2)
+                }
+                ws_summary.append([row_data.get(h, '') for h in SUMMARY_HEADERS])
+            
+            wb.save(filepath)
+            wb.close()
+    except Exception as e:
+        print(f"[ERROR] generate_monthly_summary: {e}")
+
+def auto_rotate_year(project_id: str):
+    """เมื่อถึง 1 มกราคม ให้ archive ปีเก่า"""
+    now = datetime.now()
+    if now.month == 1 and now.day <= 2:
+        last_year = str(int(now.strftime('%Y')) - 1)
+        print(f"[XLSX] Year rotated: {project_id} ({last_year})")
+
+def _parse_dt(s: str):
+    try:
+        if not s:
+            return None
+        if isinstance(s, datetime):
+            return s
+        s_str = str(s).strip()
+        if 'T' in s_str:
+            return datetime.strptime(s_str, "%Y-%m-%dT%H:%M:%S")
+        else:
+            return datetime.strptime(s_str, "%Y-%m-%d %H:%M:%S")
+    except Exception:
+        try:
+            return datetime.fromisoformat(str(s))
+        except:
+            return None
+
+def _month_iter(start_dt: datetime, end_dt: datetime):
+    y = start_dt.year
+    m = start_dt.month
+    while y < end_dt.year or (y == end_dt.year and m <= end_dt.month):
+        yield (str(y), f"{m:02d}")
+        m += 1
+        if m > 12:
+            m = 1
+            y += 1
+
+def read_history_from_excel(project_id: str, device_id: str, key: str, start_ts: str, end_ts: str, device_name: str = None):
+    """
+    🔥 FIXED VERSION - รองรับการจับคู่ทั้ง device_id และ device_name
+    """
+    try:
+        print(f"[XLSX] Query: dev_id={device_id} key={key} name={device_name} start={start_ts} end={end_ts}")
+        
+        sdt = _parse_dt(start_ts)
+        edt = _parse_dt(end_ts)
+        if not sdt or not edt:
+            print("[XLSX] Invalid date range, using default 7 days")
+            sdt = datetime.now() - timedelta(days=7)
+            edt = datetime.now()
+        
+        out = []
+        
+        with _WB_LOCK:
+            for y, m in _month_iter(sdt, edt):
+                fp = get_monthly_file(project_id, y, m)
+                print(f"[XLSX] Checking file: {fp}")
+                
+                if not os.path.exists(fp):
+                    print(f"[XLSX] File not found: {fp}")
+                    continue
+                
+                try:
+                    wb = load_workbook(fp, data_only=True)
+                except Exception as e:
+                    print(f"[XLSX] Cannot load file (corrupted): {fp} - {e}")
+                    # ลองสร้างใหม่
+                    ensure_sheets(fp)
+                    continue
+                
+                sheets_to_check = []
+                if 'Historical' in wb.sheetnames:
+                    sheets_to_check.append(('Historical', 'hist'))
+                if 'Readings' in wb.sheetnames:
+                    sheets_to_check.append(('Readings', 'real'))
+                
+                for sheet_name, sheet_type in sheets_to_check:
+                    ws = wb[sheet_name]
+                    for row in ws.iter_rows(min_row=2, values_only=True):
+                        try:
+                            if sheet_type == 'hist':
+                                # Historical: timestamp, device_id, device_name, key, value, unit, interval
+                                ts, did, dname, rkey, val, unit, interval = row
+                                dt = _parse_dt(ts)
+                            else:
+                                # Readings: date, time, device_id, device_name, key, value, unit
+                                date_val, time_val, did, dname, rkey, val, unit = row
+                                dt = _parse_dt(f"{date_val}T{time_val}")
+
+                            # 🔥 FIX: จับคู่ทั้ง ID และ Name
+                            is_dev_match = False
+                            
+                            # ลองจับคู่ device_id
+                            if str(did) == str(device_id):
+                                is_dev_match = True
+                            
+                            # ถ้าไม่ match และมี device_name ให้ลองจับคู่
+                            if not is_dev_match and device_name:
+                                # ลองจับ device_id column เป็น name
+                                if str(did) == str(device_name):
+                                    is_dev_match = True
+                                # ลองจับ device_name column
+                                if str(dname) == str(device_name):
+                                    is_dev_match = True
+                            
+                            # ถ้ายังไม่ match ให้ลองจับ device_name column เป็น ID
+                            if not is_dev_match and dname:
+                                if str(dname) == str(device_id):
+                                    is_dev_match = True
+                            
+                            if not is_dev_match:
+                                continue
+                            
+                            # ต้อง match key ด้วย
+                            if str(rkey) != str(key):
+                                continue
+                            
+                            if not dt:
+                                continue
+                            
+                            if dt < sdt or dt > edt:
+                                continue
+                                
+                            v = float(val)
+                            out.append({"timestamp": dt.strftime("%Y-%m-%d %H:%M:%S"), "value": v})
+                            
+                        except Exception as e:
+                            continue
+                
+                wb.close()
+        
+        # Deduplicate
+        seen = set()
+        unique_out = []
+        for item in out:
+            if item['timestamp'] not in seen:
+                seen.add(item['timestamp'])
+                unique_out.append(item)
+                
+        unique_out.sort(key=lambda x: x.get("timestamp"))
+        print(f"[XLSX] ✅ Found {len(unique_out)} records")
+        return unique_out
+        
+    except Exception as e:
+        print(f"[ERROR] read_history_from_excel: {e}")
+        import traceback
+        traceback.print_exc()
+        return []

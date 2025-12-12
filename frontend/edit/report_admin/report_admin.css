@@ -1,0 +1,197 @@
+/* =============================================================
+   REPORT ADMIN CSS — White/Red + Black/Red Futuristic AI Theme
+   Concept: Luxury • Futuristic • Robot • 3D Depth • Clean UI
+   ============================================================= */
+
+/* ---------- Root Theme Colors ---------- */
+:root {
+    --bg-dark: #0a0a0c;
+    --bg-panel: #111114;
+    --bg-panel-2: #161618;
+    --bg-glass: rgba(255,255,255,0.04);
+
+    --red-base: #ff0033;
+    --red-dark: #8b001b;
+    --red-glow: rgba(255,0,70,0.65);
+
+    --white-soft: #e8e8ee;
+    --white-dim: #ccccd5;
+    --text-muted: #a0a0b0;
+
+    --border-soft: rgba(255,255,255,0.08);
+    --border-strong: rgba(255,255,255,0.15);
+
+    --radius: 12px;
+
+    --shadow-3d: 0 0 15px rgba(255,0,60,0.15), inset 0 0 18px rgba(255,0,60,0.08);
+    --shadow-3d-strong: 0 0 22px rgba(255,0,60,0.45);
+}
+
+/* ---------- Base Styles ---------- */
+body {
+    margin: 0;
+    padding: 24px;
+    background: var(--bg-dark);
+    color: var(--white-soft);
+    font-family: 'Kanit', sans-serif;
+    letter-spacing: 0.25px;
+}
+
+h1, h2, h3 {
+    color: var(--white-soft);
+    letter-spacing: 0.5px;
+}
+
+p, label {
+    color: var(--text-muted);
+}
+
+/* ---------- Container / Card ---------- */
+.container, .card {
+    background: var(--bg-panel);
+    border-radius: var(--radius);
+    border: 1px solid var(--border-soft);
+    padding: 18px;
+    box-shadow: var(--shadow-3d);
+}
+
+.card-2 {
+    background: var(--bg-panel-2);
+}
+
+/* ---------- Inputs ---------- */
+input[type=text], input[type=date], select, textarea {
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--bg-glass);
+    color: var(--white-soft);
+    border-radius: 8px;
+    border: 1px solid var(--border-soft);
+    outline: none;
+    transition: 0.2s;
+    backdrop-filter: blur(6px);
+}
+
+input:focus, select:focus, textarea:focus {
+    border-color: var(--red-base);
+    box-shadow: 0 0 12px rgba(255,0,50,0.3);
+}
+
+textarea {
+    font-family: monospace;
+}
+
+/* ---------- Buttons ---------- */
+.btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    border: none;
+    font-weight: 600;
+    transition: 0.18s ease;
+    letter-spacing: 0.3px;
+}
+
+.btn-red {
+    background: linear-gradient(135deg, var(--red-base), var(--red-dark));
+    color: white;
+    box-shadow: var(--shadow-3d);
+}
+
+.btn-red:hover {
+    box-shadow: var(--shadow-3d-strong);
+    transform: translateY(-1px);
+}
+
+.btn-blue {
+    background: #3b82f6;
+    color: white;
+}
+
+.btn-green {
+    background: #10b981;
+    color: white;
+}
+
+.btn-gray {
+    background: #64748b;
+    color: white;
+}
+
+/* ---------- Template Item List ---------- */
+.template-item {
+    background: var(--bg-glass);
+    border: 1px solid var(--border-soft);
+    padding: 14px;
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    backdrop-filter: blur(4px);
+}
+
+.template-item:hover {
+    border-color: var(--red-base);
+    box-shadow: var(--shadow-3d-strong);
+}
+
+/* ---------- Block Cards for Editor ---------- */
+.block-card {
+    background: var(--bg-panel-2);
+    border-radius: var(--radius);
+    padding: 16px;
+    border: 1px solid var(--border-soft);
+    box-shadow: var(--shadow-3d);
+}
+
+.block-header b {
+    color: var(--white-soft);
+    font-size: 15px;
+}
+
+/* ---------- Tables ---------- */
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 10px;
+    border-bottom: 1px solid var(--border-soft);
+    color: var(--white-dim);
+}
+
+tr:hover td {
+    background: rgba(255,0,40,0.05);
+}
+
+/* ---------- Back Button ---------- */
+.back-btn {
+    margin-top: 18px;
+    display: inline-block;
+}
+
+/* ---------- Futuristic Accents ---------- */
+.ai-glow {
+    text-shadow: 0 0 12px var(--red-glow);
+    color: var(--red-base);
+}
+
+/* ---------- Scrollbars ---------- */
+::-webkit-scrollbar {
+    width: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: #0d0d11;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(var(--red-base), var(--red-dark));
+    border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--red-base);
+}

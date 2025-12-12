@@ -1,0 +1,1 @@
+Manager writes per-project status here.

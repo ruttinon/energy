@@ -1,0 +1,175 @@
+{
+  "polling_interval": 3,
+  "registers": [
+    { 
+      "key": "Voltage_L1",
+      "address": 36873,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 100,
+      "unit": "V",
+      "description": "แรงดันไฟฟ้าเฟส L1 ต่อ Neutral (หน่วยโวลต์)"
+    },
+    { 
+      "key": "Voltage_L2",
+      "address": 36875,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 100,
+      "unit": "V",
+      "description": "แรงดันไฟฟ้าเฟส L2 ต่อ Neutral (หน่วยโวลต์)"
+    },
+    { 
+      "key": "Voltage_L3",
+      "address": 36877,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 100,
+      "unit": "V",
+      "description": "แรงดันไฟฟ้าเฟส L3 ต่อ Neutral (หน่วยโวลต์)"
+    },
+    { 
+      "key": "Voltage_L1L2",
+      "address": 36879,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 10,
+      "unit": "V",
+      "description": "แรงดันไฟฟ้าเฟส L1 ต่อ L2 (หน่วยโวลต์)"
+    },
+    { 
+      "key": "Voltage_L2L3",
+      "address": 36881,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 10,
+      "unit": "V",
+      "description": "แรงดันไฟฟ้าเฟส L2 ต่อ L3 (หน่วยโวลต์)"
+    },
+    { 
+      "key": "Voltage_L3L1",
+      "address": 36883,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 10,
+      "unit": "V",
+      "description": "แรงดันไฟฟ้าเฟส L3 ต่อ L1 (หน่วยโวลต์)"
+    },
+    { 
+      "key": "Current_L1",
+      "address": 18458,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 1000,
+      "unit": "A",
+      "description": "กระแสไฟฟ้าเฟส L1 (แอมป์)"
+    },
+    { 
+      "key": "Current_L2",
+      "address": 18460,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 1000,
+      "unit": "A",
+      "description": "กระแสไฟฟ้าเฟส L2 (แอมป์)"
+    },
+    { 
+      "key": "Current_L3",
+      "address": 18462,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 1000,
+      "unit": "A",
+      "description": "กระแสไฟฟ้าเฟส L3 (แอมป์)"
+    },
+    { 
+      "key": "ActivePower_L1",
+      "address": 18488,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 100,
+      "unit": "kW",
+      "description": "กำลังไฟฟ้าจริงเฟส L1 (กิโลวัตต์)"
+    },
+    { 
+      "key": "ActivePower_L2",
+      "address": 18490,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 100,
+      "unit": "kW",
+      "description": "กำลังไฟฟ้าจริงเฟส L2 (กิโลวัตต์)"
+    },
+    { 
+      "key": "ActivePower_L3",
+      "address": 18492,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 100,
+      "unit": "kW",
+      "description": "กำลังไฟฟ้าจริงเฟส L3 (กิโลวัตต์)"
+    },
+    { 
+      "key": "ReactivePower_L1",
+      "address": 18494,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 100,
+      "unit": "kvar",
+      "description": "กำลังไฟฟ้ารีแอคทีฟเฟส L1 (กิโลวาร์)"
+    },
+    { 
+      "key": "ReactivePower_L2",
+      "address": 18496,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 100,
+      "unit": "kvar",
+      "description": "กำลังไฟฟ้ารีแอคทีฟเฟส L2 (กิโลวาร์)"
+    },
+    { 
+      "key": "ReactivePower_L3",
+      "address": 18498,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 100,
+      "unit": "kvar",
+      "description": "กำลังไฟฟ้ารีแอคทีฟเฟส L3 (กิโลวาร์)"
+    },
+    { 
+      "key": "Frequency",
+      "address": 18441,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 100,
+      "unit": "Hz",
+      "description": "ความถี่ไฟฟ้ากระแสสลับ (เฮิร์ตซ์)"
+    },
+    { 
+      "key": "ActiveEnergy_kWh",
+      "address": 19843,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 10,
+      "unit": "kWh",
+      "description": "พลังงานไฟฟ้าสะสมรวมทั้งหมด (กิโลวัตต์ชั่วโมง)"
+    }
+  ]
+}

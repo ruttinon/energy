@@ -1,0 +1,337 @@
+<!DOCTYPE html> 
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alert & Event Management</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    body { font-family: Kanit, sans-serif; }
+
+    .card-3d {
+      transition: transform .25s ease, box-shadow .25s ease;
+    }
+    .card-3d:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 20px 35px rgba(150,0,0,.25);
+    }
+
+    #historyContainer::-webkit-scrollbar,
+    #liveContainer::-webkit-scrollbar,
+    #eventContainer::-webkit-scrollbar,
+    #deviceContainer::-webkit-scrollbar {
+      width: 8px;
+    }
+    #historyContainer::-webkit-scrollbar-thumb,
+    #liveContainer::-webkit-scrollbar-thumb,
+    #eventContainer::-webkit-scrollbar-thumb,
+    #deviceContainer::-webkit-scrollbar-thumb {
+      background: #b8b8b8;
+      border-radius: 8px;
+    }
+
+    .title-red {
+      color: #b70000;
+      text-shadow: 0 0 8px rgba(255,80,80,.3);
+    }
+
+    .status-online {
+      color: #10b981;
+      font-weight: bold;
+      text-shadow: 0 0 8px rgba(16,185,129,0.5);
+    }
+
+    .status-offline {
+      color: #ef4444;
+      font-weight: bold;
+      text-shadow: 0 0 8px rgba(239,68,68,0.5);
+    }
+  </style>
+</head>
+
+<body class="bg-gradient-to-br from-red-50 via-white to-red-100">
+
+  <!-- Header -->
+  <header class="bg-gradient-to-r from-red-800 to-red-600 text-white px-6 py-4 flex justify-between items-center shadow-lg">
+    <h1 class="text-xl font-bold drop-shadow">🚨 Alert & Event Management</h1>
+
+    <button onclick="backHome()" 
+            class="bg-white/10 px-4 py-2 rounded hover:bg-white/20 border border-white/30 backdrop-blur">
+      ⬅ กลับไป Dashboard
+    </button>
+  </header>
+
+  <main class="p-6 space-y-6">
+
+    <!-- ======================= SUMMARY CARDS ======================= -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="p-4 bg-white rounded-xl shadow card-3d text-center">
+        <div class="text-2xl font-bold text-red-600" id="sumCritical">0</div>
+        <div class="text-gray-500">Critical Alerts</div>
+      </div>
+
+      <div class="p-4 bg-white rounded-xl shadow card-3d text-center">
+        <div class="text-2xl font-bold text-yellow-500" id="sumWarning">0</div>
+        <div class="text-gray-500">Warnings</div>
+      </div>
+
+      <div class="p-4 bg-white rounded-xl shadow card-3d text-center">
+        <div class="text-2xl font-bold text-blue-500" id="sumInfo">0</div>
+        <div class="text-gray-500">Info Alerts</div>
+      </div>
+
+      <div class="p-4 bg-white rounded-xl shadow card-3d text-center">
+        <div class="text-2xl font-bold text-gray-700" id="sumTotal">0</div>
+        <div class="text-gray-500">Total Alerts</div>
+      </div>
+    </div>
+
+
+    <!-- ======================= DEVICE STATUS TABLE ======================= -->
+    <div class="bg-white/70 backdrop-blur rounded-xl shadow-lg p-4 card-3d">
+
+      <div class="flex justify-between items-center mb-3">
+        <h2 class="text-lg font-bold title-red flex items-center gap-2">
+          🖥️ Device Status Monitor
+          <span id="statusBadgeOnline" class="px-2 py-1 bg-blue-600 text-white text-xs rounded-full">0</span>
+        </h2>
+
+        <button onclick="refreshDeviceStatus()" 
+                class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
+          🔄 Refresh
+        </button>
+      </div>
+
+      <div id="deviceContainer" class="overflow-x-auto max-h-[520px] overflow-y-auto">
+        <table class="w-full text-sm border-collapse">
+          <thead>
+            <tr class="bg-gradient-to-r from-gray-700 to-gray-600 text-white sticky top-0">
+              <th class="p-3 text-left border border-gray-500">CONVERTOR</th>
+              <th class="p-3 text-left border border-gray-500">DEVICE</th>
+              <th class="p-3 text-left border border-gray-500">IP ADDRESS</th>
+              <th class="p-3 text-left border border-gray-500">LAST UPDATE</th>
+              <th class="p-3 text-center border border-gray-500">STATUS</th>
+            </tr>
+          </thead>
+          <tbody id="deviceStatusTableBody">
+            <tr>
+              <td colspan="5" class="p-4 text-center text-gray-500">
+                กำลังโหลดข้อมูล...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+
+    <!-- ======================= FILTERS ======================= -->
+    <div class="p-4 bg-white rounded-xl shadow card-3d flex flex-wrap gap-4 items-center">
+
+      <select id="filterSeverity" class="p-2 border rounded">
+        <option value="">ระดับความรุนแรงทั้งหมด</option>
+        <option value="critical">Critical</option>
+        <option value="warn">Warning</option>
+        <option value="info">Info</option>
+      </select>
+
+      <input id="filterDevice" type="text" placeholder="ค้นหา Device" 
+             class="p-2 border rounded">
+
+      <div class="flex gap-2 items-center">
+        <label class="text-sm text-gray-600">จากวันที่:</label>
+        <input type="date" id="filterDateStart" class="p-2 border rounded">
+      </div>
+
+      <div class="flex gap-2 items-center">
+        <label class="text-sm text-gray-600">ถึงวันที่:</label>
+        <input type="date" id="filterDateEnd" class="p-2 border rounded">
+      </div>
+
+      <button onclick="applyFilter()" 
+              class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
+        ค้นหา
+      </button>
+
+    </div>
+
+
+    <!-- ======================= LIVE ALERTS ======================= -->
+    <div class="bg-white/70 backdrop-blur rounded-xl shadow-lg p-4 card-3d">
+
+      <div class="flex justify-between items-center mb-2">
+        <h2 class="text-lg font-bold title-red flex items-center gap-2">
+          📡 Live Alerts
+          <span id="liveBadge" class="px-2 py-1 bg-red-600 text-white text-xs rounded-full">0</span>
+        </h2>
+      </div>
+
+      <div id="liveContainer" class="max-h-[350px] overflow-y-auto border rounded-lg p-2 bg-gray-50">
+        <div id="liveAlertList"></div>
+      </div>
+    </div>
+
+
+    <!-- ======================= ALERT HISTORY ======================= -->
+    <div class="bg-white/70 backdrop-blur rounded-xl shadow-lg p-4 card-3d">
+
+      <div class="flex justify-between items-center mb-3">
+        <h2 class="text-lg font-bold title-red flex items-center gap-2">
+          📜 Alert History
+          <span id="historyBadge" class="px-2 py-1 bg-red-600 text-white text-xs rounded-full">0</span>
+        </h2>
+
+        <div class="flex gap-2">
+          <button onclick="clearHistory()" 
+            class="px-4 py-1 bg-red-700 text-white rounded hover:bg-red-800 text-sm">
+            🧹 Clear History
+          </button>
+
+          <button onclick="exportHistory()" 
+            class="px-4 py-1 bg-gray-600 text-white rounded hover:bg-gray-700 text-sm">
+            ⬇ Export CSV
+          </button>
+        </div>
+      </div>
+
+      <div id="historyContainer" 
+           class="max-h-[350px] overflow-y-auto border rounded-lg p-2 bg-gray-50">
+
+        <div id="alertHistory"></div>
+
+      </div>
+    </div>
+
+
+    <!-- ======================= EVENT TABLE ======================= -->
+    <div class="bg-white/70 backdrop-blur rounded-xl shadow-lg p-4 card-3d">
+
+      <div class="flex justify-between items-center mb-3">
+        <h2 class="text-lg font-bold title-red flex items-center gap-2">
+          📋 Events
+          <span id="eventBadge" class="px-2 py-1 bg-red-600 text-white text-xs rounded-full">0</span>
+        </h2>
+
+        <button onclick="clearEvents()" 
+                class="px-4 py-1 bg-red-700 text-white rounded hover:bg-red-800 text-sm">
+          🧹 Clear Events
+        </button>
+      </div>
+
+      <div id="eventContainer" 
+           class="max-h-[350px] overflow-y-auto border rounded-lg p-2 bg-gray-50">
+
+        <table class="w-full text-sm">
+          <thead class="bg-red-50">
+            <tr>
+              <th class="p-2 text-left">เวลา</th>
+              <th class="p-2 text-left">ประเภท</th>
+              <th class="p-2 text-left">จาก</th>
+              <th class="p-2 text-left">เหตุการณ์</th>
+              <th class="p-2 text-left">รายละเอียด</th>
+              <th class="p-2 text-left">Count</th>
+            </tr>
+          </thead>
+          <tbody id="eventTableBody"></tbody>
+        </table>
+
+      </div>
+
+    </div>
+
+
+    <!-- ======================= RULE MANAGEMENT ======================= -->
+    <div class="bg-white rounded-xl shadow p-4 card-3d">
+
+      <div class="flex justify-between items-center mb-3">
+        <h2 class="text-lg font-bold title-red">⚙️ Alert Rule Management</h2>
+
+        <button onclick="openRuleModal()" 
+                class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+          ➕ เพิ่มกฎใหม่
+        </button>
+      </div>
+
+      <div id="ruleTable" class="space-y-2"></div>
+
+    </div>
+
+
+  </main>
+
+  <!-- RULE MODAL -->
+  <div id="ruleModal"
+      class="hidden fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+      
+    <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-lg">
+      <h3 id="ruleModalTitle" class="text-xl font-bold mb-4 title-red">เพิ่มกฎใหม่</h3>
+      
+      <form id="ruleForm" onsubmit="event.preventDefault(); saveRule();">
+        <input type="hidden" id="rule_id">
+        
+        <div class="space-y-3">
+          <div>
+            <label class="block text-sm font-semibold mb-1">ชื่อกฎ</label>
+            <input type="text" id="rule_name" class="w-full p-2 border rounded" required>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-semibold mb-1">Parameter</label>
+            <select id="rule_param" class="w-full p-2 border rounded" required>
+              <option value="">-- เลือก Parameter --</option>
+            </select>
+          </div>
+          
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-sm font-semibold mb-1">Operator</label>
+              <select id="rule_operator" class="w-full p-2 border rounded">
+                <option value=">">></option>
+                <option value="<"><</option>
+                <option value=">=">>=</option>
+                <option value="<="><=</option>
+                <option value="==">==</option>
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-semibold mb-1">Threshold</label>
+              <input type="number" step="any" id="rule_threshold" class="w-full p-2 border rounded" required>
+            </div>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-semibold mb-1">Severity</label>
+            <select id="rule_severity" class="w-full p-2 border rounded">
+              <option value="critical">Critical</option>
+              <option value="warn">Warning</option>
+              <option value="info">Info</option>
+            </select>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-semibold mb-1">Message</label>
+            <textarea id="rule_message" class="w-full p-2 border rounded" rows="3" required></textarea>
+          </div>
+        </div>
+        
+        <div class="flex gap-2 mt-4">
+          <button type="submit" class="flex-1 bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
+            บันทึก
+          </button>
+          <button type="button" onclick="closeRuleModal()" class="flex-1 bg-gray-500 text-white py-2 rounded hover:bg-gray-600">
+            ยกเลิก
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- JS -->
+  <script src="/web/admin/alert_admin/alert_admin.js"></script>
+  <script src="/web/admin/alert_admin/event_admin.js"></script>
+  
+</body>
+</html>

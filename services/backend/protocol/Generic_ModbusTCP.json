@@ -1,0 +1,65 @@
+{
+  "name": "Modbus TCP Driver",
+  "version": "1.1",
+  "type": "converter",
+  "description": "Dedicated Modbus TCP communication driver supporting TCP client and server modes with baudrate 4800–115200.",
+
+  "protocols_supported": [
+    "modbus_tcp"
+  ],
+
+  "connection_types": [
+    "tcp_client",
+    "tcp_server"
+  ],
+
+  "network_settings": {
+    "default_host": "0.0.0.0",
+    "default_port": 5503,
+    "port_range": [1, 65535],
+    "timeout_default": 3.0,
+    "keepalive_default": true,
+    "max_connections": 10,
+    "retry_interval": 5.0,
+    "broadcast_enabled": false
+  },
+
+  "baudrate_settings": {
+    "supported_range": [4800, 115200],
+    "default": 9600,
+    "step": [4800, 9600, 19200, 38400, 57600, 115200]
+  },
+
+  "driver_behavior": {
+    "auto_reconnect": true,
+    "thread_safe": true,
+    "logging_level": "info",
+    "enable_statistics": true,
+    "realtime_mode": false
+  },
+
+  "status": {
+    "connected": false,
+    "last_response_time": null,
+    "tx_count": 0,
+    "rx_count": 0,
+    "error_count": 0,
+    "reconnect_count": 0
+  },
+
+  "examples": {
+    "tcp_client": {
+      "protocol": "modbus_tcp",
+      "connection_type": "tcp_client",
+      "host": "0.0.0.0",
+      "port": 5503,
+      "baudrate": 9600
+    },
+    "tcp_server": {
+      "protocol": "modbus_tcp",
+      "connection_type": "tcp_server",
+      "host": "0.0.0.0",
+      "port": 5503
+    }
+  }
+}

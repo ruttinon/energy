@@ -1,0 +1,92 @@
+[
+  {
+    "x": "58.67",
+    "y": "30.15",
+    "type": "device",
+    "style": {
+      "bg": "#ffffff",
+      "color": "#000000",
+      "font": 14,
+      "radius": 4,
+      "padding": 4,
+      "opacity": 100,
+      "transparent": true
+    },
+    "device_id": "6",
+    "param": {
+      "key": "Generated_kWh"
+    }
+  },
+  {
+    "x": "58.56",
+    "y": "33.87",
+    "type": "device",
+    "style": {
+      "bg": "#ffffff",
+      "color": "#000000",
+      "font": 14,
+      "radius": 4,
+      "padding": 4,
+      "opacity": 100,
+      "transparent": true
+    },
+    "device_id": "5",
+    "param": {
+      "key": "Current_L1"
+    }
+  },
+  {
+    "x": "58.20",
+    "y": "26.94",
+    "type": "device",
+    "style": {
+      "bg": "#ffffff",
+      "color": "#000000",
+      "font": 14,
+      "radius": 4,
+      "padding": 4,
+      "opacity": 100,
+      "transparent": false
+    },
+    "device_id": "5",
+    "param": {
+      "key": "Voltage_L2L3"
+    }
+  },
+  {
+    "x": "7.06",
+    "y": "27.83",
+    "type": "device",
+    "style": {
+      "bg": "#ffffff",
+      "color": "#000000",
+      "font": 14,
+      "radius": 4,
+      "padding": 4,
+      "opacity": 100,
+      "transparent": false
+    },
+    "device_id": "5",
+    "param": {
+      "key": "ReactivePower_L2"
+    }
+  },
+  {
+    "x": "18.54",
+    "y": "37.85",
+    "type": "device",
+    "style": {
+      "bg": "#ffffff",
+      "color": "#000000",
+      "font": 14,
+      "radius": 4,
+      "padding": 4,
+      "opacity": 100,
+      "transparent": false
+    },
+    "device_id": "5",
+    "param": {
+      "key": "ActiveEnergy_kWh"
+    }
+  }
+]

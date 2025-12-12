@@ -1,0 +1,9 @@
+# Offline install using vendor_wheels:
+# pip install --no-index --find-links=../vendor_wheels -r requirements.txt
+fastapi
+uvicorn
+pydantic
+qrcode[pil]
+requests
+paho-mqtt
+openpyxl

@@ -1,0 +1,58 @@
+{
+  "template_id": "summary",
+  "name": "สรุปรายวัน",
+  "desc": "เทมเพลตสำหรับสรุปค่าไฟรายวัน",
+  "pages": [
+    {
+      "w": 794,
+      "h": 1123,
+      "background": null
+    }
+  ],
+  "elements": [
+    {
+      "page": 0,
+      "type": "text",
+      "html": "<h1 style='text-align:center; color:#ff0033;'>สรุปค่าไฟฟ้า</h1>",
+      "left": 50,
+      "top": 40,
+      "width": 694,
+      "height": 60,
+      "style": {
+        "fontSize": "28px",
+        "fontFamily": "Kanit",
+        "color": "#ff0033",
+        "textAlign": "center",
+        "fontWeight": "bold"
+      }
+    },
+    {
+      "page": 0,
+      "type": "text",
+      "html": "<p style='text-align:center;'><b>วันที่:</b> {{date}}</p>",
+      "left": 50,
+      "top": 120,
+      "width": 694,
+      "height": 30,
+      "style": {
+        "fontSize": "16px",
+        "fontFamily": "Kanit",
+        "color": "#000000",
+        "textAlign": "center"
+      }
+    },
+    {
+      "page": 0,
+      "type": "text",
+      "html": "\n                <div style='display:flex; gap:20px; justify-content:space-around;'>\n                    <div style='background:#4CAF50; color:white; padding:30px; border-radius:12px; flex:1; text-align:center;'>\n                        <h3 style='margin:0 0 10px 0;'>พลังงานรวม</h3>\n                        <h2 style='margin:0;'>{{total_energy}} kWh</h2>\n                    </div>\n                    <div style='background:#ff0033; color:white; padding:30px; border-radius:12px; flex:1; text-align:center;'>\n                        <h3 style='margin:0 0 10px 0;'>ยอดเงินรวม</h3>\n                        <h2 style='margin:0;'>{{total_cost}} บาท</h2>\n                    </div>\n                </div>\n                ",
+      "left": 50,
+      "top": 180,
+      "width": 694,
+      "height": 150,
+      "style": {
+        "fontSize": "18px",
+        "fontFamily": "Kanit"
+      }
+    }
+  ]
+}

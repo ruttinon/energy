@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>WEBVIEW-S | Index Electricity</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+
+  <!-- Layout CSS -->
+  <link rel="stylesheet" href="../monitor/partials/layout.css">
+
+  <!-- Page Style -->
+  <link rel="stylesheet" href="./css/consumption.css">
+</head>
+
+<body>
+
+  <!-- HEADER AUTO LOAD -->
+  <div id="header-container"></div>
+
+  <!-- SIDEBAR AUTO LOAD -->
+  <div id="sidebar-container"></div>
+
+  <!-- ========== Partial Loader (แบบเดียวกับหน้าอื่น) ========== -->
+  <script>
+    async function loadPartial(targetId, url) {
+      try {
+        const container = document.getElementById(targetId);
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`Failed to load ${url}`);
+        
+        const html = await res.text();
+        container.innerHTML = html;
+
+        // run <script> ภายใน partial
+        const scripts = container.querySelectorAll("script");
+        scripts.forEach(oldScript => {
+          const newScript = document.createElement("script");
+          if (oldScript.src) newScript.src = oldScript.src;
+          else newScript.textContent = oldScript.textContent;
+          document.body.appendChild(newScript);
+        });
+      } catch (error) {
+        console.error(`Error loading partial from ${url}:`, error);
+      }
+    }
+
+    // load header
+    loadPartial("header-container", "../monitor/partials/header.html");
+
+    // load sidebar + slide control
+    loadPartial("sidebar-container", "../monitor/partials/sidebar.html")
+      .then(() => {
+        import("../monitor/partials/slideControl.js")
+          .then(m => m.initSidebarSlide())
+          .catch(err => console.error("Error loading slide control:", err));
+      });
+  </script>
+  <!-- ===================================================== -->
+
+  <!-- MAIN LAYOUT -->
+  <div class="app">
+    <main class="content">
+
+      <!-- Top Bar -->
+      <div class="top-bar">
+        <h2>⚡ Index Electricity</h2>
+        <div class="range">
+          From <span id="from">-</span> To <span id="to">-</span>
+        </div>
+      </div>
+
+      <!-- Button Group -->
+      <div class="btn-group">
+        <button class="btn active" data-type="Ea_plus">Ea+</button>
+        <button class="btn" data-type="Er_plus">Er+</button>
+        <button class="btn" data-type="Es">Es</button>
+      </div>
+
+      <!-- Summary Cards -->
+      <div class="summary-container">
+        <div class="summary-card">
+          <div class="summary-label">📊 Total Consumption</div>
+          <div class="summary-value" id="summary-total">
+            --<span class="summary-unit">Wh</span>
+          </div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">📈 Average Value</div>
+          <div class="summary-value" id="summary-avg">
+            --<span class="summary-unit">Wh</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Table Container -->
+      <div class="table-container">
+        <div class="table-header">
+          <div class="table-title">📋 Data Records</div>
+        </div>
+        <div class="table-wrapper">
+          <table id="dataTable">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Value (Wh)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colspan="2">
+                  <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <div>Loading data...</div>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <footer>
+        © 2025 WEBVIEW-S • Consumption Analysis
+      </footer>
+
+    </main>
+  </div>
+
+  <!-- Consumption Script -->
+  <script src="./js/consumption.js"></script>
+
+</body>
+</html>

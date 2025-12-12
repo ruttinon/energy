@@ -1,0 +1,52 @@
+[
+    {
+        "id": 1,
+        "rule_name": "High Voltage Warning (L1)",
+        "metric": "Voltage_L1",
+        "operator": ">",
+        "threshold": 140,
+        "severity": "warning",
+        "message": "Voltage on L1 is too high (> 140V)",
+        "is_active": true
+    },
+    {
+        "id": 2,
+        "rule_name": "Low Voltage Warning (L1)",
+        "metric": "Voltage_L1",
+        "operator": "<",
+        "threshold": 200,
+        "severity": "warning",
+        "message": "Voltage on L1 is too low (< 200V)",
+        "is_active": true
+    },
+    {
+        "id": 3,
+        "rule_name": "High Current Critical (L1)",
+        "metric": "Current_L1",
+        "operator": ">",
+        "threshold": 10,
+        "severity": "critical",
+        "message": "Current usage on L1 is critical (> 10A)",
+        "is_active": true
+    },
+    {
+        "id": 4,
+        "rule_name": "Frequency Too High",
+        "metric": "Frequency",
+        "operator": ">",
+        "threshold": 51,
+        "severity": "warning",
+        "message": "Frequency is above normal (> 51Hz)",
+        "is_active": true
+    },
+    {
+        "id": 5,
+        "rule_name": "Frequency Too Low",
+        "metric": "Frequency",
+        "operator": "<",
+        "threshold": 49,
+        "severity": "critical",
+        "message": "Frequency dropped below 49Hz",
+        "is_active": true
+    }
+]

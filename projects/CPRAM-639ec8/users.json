@@ -1,0 +1,8 @@
+{
+  "user": {
+    "username": "user",
+    "salt": "52c6954c8b31a83d",
+    "password_hash": "e973855fbd405d6fc260160653030e56411fbfc290a8931de75818d8c4b7b3b1",
+    "role": "user"
+  }
+}

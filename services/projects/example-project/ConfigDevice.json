@@ -1,0 +1,14 @@
+{
+  "version": "1.0",
+  "project_id": "example-project",
+  "devices": [
+    {
+      "id": "meter-01",
+      "name": "Meter 01",
+      "driver": "modbus-tcp",
+      "polling": {
+        "interval_ms": 1000
+      }
+    }
+  ]
+}

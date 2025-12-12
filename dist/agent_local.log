@@ -1,0 +1,13 @@
+[2025-12-12 13:55:22] [FATAL] Missing required config keys: backend,project,token,device_id,name,converter,template,ip,port,slave
+[2025-12-12 14:14:16] [FATAL] Missing backend URL
+[2025-12-12 14:23:31] [FATAL] Missing backend URL
+[2025-12-12 14:23:34] [FATAL] Missing backend URL
+[2025-12-12 14:23:38] [FATAL] Missing backend URL
+[2025-12-12 14:23:40] [FATAL] Missing backend URL
+[2025-12-12 14:23:42] [FATAL] Missing backend URL
+[2025-12-12 14:23:44] [FATAL] Missing backend URL
+[2025-12-12 14:35:56] [FATAL] Login failed: HTTPConnectionPool(host='server.company.com', port=8000): Max retries exceeded with url: /api/login_user (Caused by NameResolutionError("<urllib3.connection.HTTPConnection object at 0x0000020E3FBFD710>: Failed to resolve 'server.company.com' ([Errno 11001] getaddrinfo failed)"))
+[2025-12-12 14:38:30] [FATAL] Login failed: Invalid URL 'http:\\\\server.company.com:8000/api/login_user_any': No host supplied
+[2025-12-12 14:38:52] [FATAL] Login failed: 'NoneType' object has no attribute 'rstrip'
+[2025-12-12 14:40:00] [FATAL] Login failed: HTTPConnectionPool(host='127.0.0.1', port=8000): Max retries exceeded with url: /api/login_user (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x0000023CE87EDB10>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))
+[2025-12-12 14:49:17] [FATAL] Login failed: HTTPConnectionPool(host='127.0.0.1', port=8000): Max retries exceeded with url: /api/login_user (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001FC8D4C7490>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))

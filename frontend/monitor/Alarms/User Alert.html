@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>User Alert Viewer</title>
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+  <!-- Premium Layout CSS -->
+  <link rel="stylesheet" href="/web/user/monitor/partials/layout.css">
+
+  <!-- User Alert CSS -->
+  <link rel="stylesheet" href="User Alert.css">
+</head>
+
+<body>
+
+  <!-- HEADER AUTO-LOAD -->
+  <div id="header-container"></div>
+
+  <!-- SIDEBAR AUTO-LOAD -->
+  <div id="sidebar-container"></div>
+
+  <!-- ========== LOAD PARTIAL FUNCTION (สำคัญที่สุด) ========== -->
+  <script>
+    async function loadPartial(targetId, url) {
+      const container = document.getElementById(targetId);
+      const res = await fetch(url);
+      const html = await res.text();
+
+      // ใส่ HTML ที่โหลดมา
+      container.innerHTML = html;
+
+      // ดึง script ข้างใน partial ให้ทำงานด้วย
+      const scripts = container.querySelectorAll("script");
+      scripts.forEach(oldScript => {
+        const newScript = document.createElement("script");
+
+        if (oldScript.src) {
+          newScript.src = oldScript.src; // script แบบ external
+        } else {
+          newScript.textContent = oldScript.textContent; // script แบบ inline เช่น goPage()
+        }
+
+        document.body.appendChild(newScript);
+      });
+    }
+
+    // โหลด Header
+    loadPartial("header-container", "/web/user/monitor/partials/header.html");
+
+    // โหลด Sidebar
+    loadPartial("sidebar-container", "/web/user/monitor/partials/sidebar.html")
+      .then(() => {
+        import("/web/user/monitor/partials/slideControl.js")
+          .then(module => module.initSidebarSlide());
+      });
+  </script>
+  <!-- ======================================================= -->
+
+  <!-- MAIN APP -->
+  <div class="app">
+    <main class="content">
+
+      <!-- UI ของ User Alert -->
+      <div class="shell" style="padding:20px; height:100%; overflow:hidden;">
+
+        <div class="topbar">
+          <div class="brand">
+            <div class="logo-visor">
+              <svg class="robot-glyph" viewBox="0 0 64 64">
+                <rect x="10" y="18" width="44" height="32" rx="6"
+                  fill="rgba(255,255,255,0.12)"
+                  stroke="rgba(30,144,255,0.6)" stroke-width="1.6" />
+                <circle cx="24" cy="32" r="3.6" fill="white" opacity="0.92" />
+                <circle cx="40" cy="32" r="3.6" fill="white" opacity="0.92" />
+                <rect x="20" y="10" width="24" height="6" rx="3"
+                  fill="rgba(30,144,255,0.12)"
+                  stroke="rgba(30,144,255,0.35)" />
+              </svg>
+            </div>
+
+            <div>
+              <h1 style="font-size:20px;">Alert Viewer</h1>
+              <p style="font-size:13px; opacity:0.7;">Read-only panel — Live alerts</p>
+            </div>
+          </div>
+
+          <div class="top-actions">
+            <div class="refresh-pill" id="lastUpdated">Updated: —</div>
+            <div class="read-only-note">Read-only</div>
+          </div>
+        </div>
+
+        <!-- MAIN GRID -->
+        <div class="main">
+
+          <!-- LEFT PANEL -->
+          <aside class="left-panel">
+            <div class="panel-head">
+              <strong>Overview</strong>
+              <span>Auto refresh</span>
+            </div>
+
+            <div class="stats-grid">
+              <div class="stat-card"><div class="num" id="stat-total">—</div><div class="lbl">Total Alerts (today)</div></div>
+              <div class="stat-card"><div class="num" id="stat-critical">—</div><div class="lbl">Critical</div></div>
+              <div class="stat-card"><div class="num" id="stat-warning">—</div><div class="lbl">Warnings</div></div>
+              <div class="stat-card"><div class="num" id="stat-normal">—</div><div class="lbl">Normal</div></div>
+            </div>
+
+            <strong style="display:block;margin-bottom:8px">Filters</strong>
+            <div class="filters">
+              <label>Station</label>
+              <select id="filter-station" class="select"><option value="all">All</option></select>
+
+              <label>Severity</label>
+              <select id="filter-severity" class="select">
+                <option value="all">All</option>
+                <option value="crit">Critical</option>
+                <option value="warn">Warning</option>
+                <option value="normal">Normal</option>
+              </select>
+
+              <label>Date Range</label>
+              <input type="date" id="filter-from" class="date">
+              <input type="date" id="filter-to" class="date">
+            </div>
+
+            <div class="holo-line"></div>
+            <div class="footer-note">This view is read-only.</div>
+          </aside>
+
+          <!-- RIGHT PANEL -->
+          <section class="right-panel">
+            <div class="table-head">
+              <h2>Live Alerts</h2>
+              <div class="table-info">
+                <span id="liveCount">— items</span>
+                <span style="font-size:12px; color:var(--text-muted);">Hover rows for glow</span>
+              </div>
+            </div>
+
+            <div class="table-wrap">
+              <table class="alert-table">
+                <thead>
+                  <tr>
+                    <th>Device</th>
+                    <th>Rule</th>
+                    <th>Message</th>
+                    <th>Severity</th>
+                    <th>Time</th>
+                  </tr>
+                </thead>
+                <tbody id="alertData"></tbody>
+              </table>
+            </div>
+          </section>
+
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <script src="User Alert.js"></script>
+
+</body>
+</html>

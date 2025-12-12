@@ -1,0 +1,12 @@
+{
+  "marker_bg": "#ffffff",
+  "marker_color": "#ffb8b8",
+  "font_size": 24,
+  "border_radius": 9,
+  "padding_x": 9,
+  "padding_y": 9,
+  "opacity": 100,
+  "shadow": false,
+  "icon_size": 28,
+  "transparent": true
+}

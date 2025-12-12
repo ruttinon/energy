@@ -1,0 +1,519 @@
+<!doctype html>
+<html>
+
+  <head>
+    <meta charset="utf-8">
+    <title>EnergyLink – Dashboard</title>
+    <link rel="stylesheet" href="css/edit.css">
+    <link rel="stylesheet" href="css/admin_overview.css">
+  </head>
+
+<body>
+  <!-- Top Header -->
+  <div class="top-header">
+    <div class="top-header-left">
+      <div class="logo">
+        ⚡ <span>ENERGYLINK</span>
+      </div>
+      <div class="search-box">
+        <input type="text" placeholder="Search...">
+      </div>
+    </div>
+
+    <div class="top-header-center">
+      <div class="header-project-name" id="top-header-project" style="display: none;">
+        <span id="top-header-project-name"></span>
+      </div>
+    </div>
+
+    <div class="top-header-right">
+      <div class="notification-icon">
+        🔔
+        <span class="notification-badge"></span>
+      </div>
+      <div class="user-profile" id="userProfile">
+        <div class="user-avatar">K</div>
+        <span>Kumkum Rai</span>
+      </div>
+      <div class="user-menu" id="userMenu" style="display:none;">
+        <button id="btnLogout" class="menu-btn">Logout</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Header / Navigation -->
+  <div class="main-nav">
+    <div class="hamburger-menu" onclick="toggleSidebar()">
+      <div class="hamburger-line"></div>
+      <div class="hamburger-line"></div>
+      <div class="hamburger-line"></div>
+    </div>
+
+    <div class="nav-menu">
+      <div class="nav-item active">add_device</div>
+      <div class="nav-item">add_report</div>
+      <div class="nav-item">add_screen</div>
+      <div class="nav-item">billing_admin</div>
+      <div class="nav-item">alert_admin</div>
+      <div class="nav-item">information</div>
+    </div>
+  </div>
+
+  <div class="layout">
+    <!-- Sidebar with slide animation -->
+    <div class="sidebar closed" id="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-title">THEME</div>
+        <select id="theme-picker">
+          <option>Cyber</option>
+          <option>Light</option>
+          <option>Dark</option>
+        </select>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">PROJECT</div>
+        <button class="menu-btn" onclick="showPage('new')">📄 New Project</button>
+        <button class="menu-btn" onclick="showPage('open')">📂 Open Project</button>
+        <button class="menu-btn" onclick="showPage('save')">💾 Save Project</button>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">DATA</div>
+        <button class="menu-btn" onclick="showPage('import')">📥 Import Data</button>
+        <button class="menu-btn" onclick="showPage('export')">📤 Export Data</button>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">ADMIN</div>
+        <button class="menu-btn" onclick="showPage('admin_overview')">📊 Overview</button>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">SYSTEM</div>
+        <button class="menu-btn" onclick="showPage('exit')">🔧 Exit</button>
+      </div>
+    </div>
+
+    <!-- Overlay for mobile -->
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <!-- Content area -->
+    <div class="content" id="content-area">
+      <h1>Welcome to EnergyLink Dashboard</h1>
+      <p>Select a menu from the left to get started.</p>
+    </div>
+  </div>
+
+  <!-- Popup for New Project -->
+  <div class="popup-overlay" id="popup-overlay">
+    <div class="popup">
+      <h2>Create New Project</h2>
+      <input id="popup-name" placeholder="Project name" />
+      <div class="popup-buttons">
+        <button class="popup-btn" onclick="createProject()">Create</button>
+        <button class="popup-btn cancel" onclick="closePopup()">Cancel</button>
+      </div>
+      <div id="popup-result" class="popup-result" style="display: none;"></div>
+    </div>
+  </div>
+
+  <!-- Popup for Open Project -->
+  <div class="popup-overlay" id="popup-open-overlay">
+    <div class="popup">
+      <h2>Open Project</h2>
+      <select id="open-project-select" class="popup-select"></select>
+      <div class="popup-buttons">
+        <button class="popup-btn" onclick="confirmOpenProject()">Open</button>
+        <button class="popup-btn cancel" onclick="closeOpenPopup()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentActiveProject = null;
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById("sidebar");
+      const overlay = document.getElementById("sidebar-overlay");
+      sidebar.classList.toggle("closed");
+      overlay.classList.toggle("active");
+    }
+
+    function openPopup(mode) {
+      document.getElementById("popup-overlay").classList.add("active");
+      document.getElementById("popup-name").value = "";
+      document.getElementById("popup-result").style.display = "none";
+    }
+
+    function closePopup() {
+      document.getElementById("popup-overlay").classList.remove("active");
+    }
+
+    async function loadActiveProject() {
+      try {
+        const res = await fetch("/api/active");
+        if (!res.ok) return;
+
+        const data = await res.json();
+        currentActiveProject = data.active;
+
+        if (currentActiveProject) {
+          const infoRes = await fetch(`/api/projects/${currentActiveProject}/info`);
+          if (infoRes.ok) {
+            const info = await infoRes.json();
+            updateHeaderProject(info.project_name);
+          } else {
+            updateHeaderProject(currentActiveProject);
+          }
+        } else {
+          updateHeaderProject(null);
+        }
+      } catch (err) {
+        console.error("Failed to load active project:", err);
+      }
+    }
+
+    function updateHeaderProject(name) {
+      const h = document.getElementById("top-header-project");
+      const n = document.getElementById("top-header-project-name");
+
+      if (name) {
+        n.textContent = name;
+        h.style.display = "flex";
+      } else {
+        h.style.display = "none";
+      }
+    }
+
+    function showPage(page) {
+      const area = document.getElementById("content-area");
+
+      if (page === 'new') {
+        openPopup("new");
+        area.innerHTML = `
+          <h1>Project Management</h1>
+          <p>Click "📄 New Project" to create a new project.</p>
+          <hr>
+          <h2>Control Project</h2>
+          <input id="pid" placeholder="project id" />
+          <button onclick="startProject()">Start</button>
+          <button onclick="stopProject()">Stop</button>
+          <p id="status"></p>
+        `;
+      }
+      else if (page === 'open') {
+        openOpenPopup();
+        area.innerHTML = `<h1>Open Project</h1><p>Select a project from popup.</p>`;
+      }
+      else if (page === 'save') {
+        area.innerHTML = `<h1>Save Project</h1><p>Coming soon…</p>`;
+      }
+      else if (page === 'import') {
+        area.innerHTML = `<h1>Import Data</h1><p>Coming soon…</p>`;
+      }
+      else if (page === 'export') {
+        area.innerHTML = `<h1>Export Data</h1><p>Coming soon…</p>`;
+      }
+      else if (page === 'exit') {
+        area.innerHTML = `<h1>Exiting…</h1><p>Please wait</p>`;
+        window.doLogout();
+      }
+      else if (page === 'admin_overview') {
+        area.innerHTML = `
+          <div class="overview">
+            <div class="overview-top-grid">
+              <div class="overview-header">
+                <div class="stat-card" id="ovProjects">Projects: -</div>
+                <div class="stat-card" id="ovDevices">Devices: -</div>
+                <div class="stat-card" id="ovAlerts">📧 Alerts: <span id="ovAlertCount">0</span></div>
+                <div class="stat-card" id="ovMonth">Month Cost: - ฿</div>
+              </div>
+              <div class="overview-aux">
+                <div class="table-card">
+                  <div class="table-header">
+                    <div class="table-title">Admin Actions</div>
+                    <div class="table-actions">
+                      <button class="menu-btn" onclick="window.AdminOverview.exportAggregates()">Export Aggregates</button>
+                      <button class="menu-btn" onclick="window.AdminOverview.clearAllAlerts()">Clear All Alerts</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="table-card">
+                  <div class="table-header">
+                    <div class="table-title">Top Projects (Cost)</div>
+                  </div>
+                  <div id="ovTopProjects" style="padding:12px"></div>
+                </div>
+                <div class="table-card">
+                  <div class="table-header">
+                    <div class="table-title">Offline Devices</div>
+                  </div>
+                  <div id="ovOfflineDevices" style="padding:12px"></div>
+                </div>
+              </div>
+            </div>
+            <div class="table-card">
+              <div class="table-header">
+                <div class="table-title">All Projects Monitor</div>
+                <div class="table-actions">
+                  <button class="menu-btn" onclick="window.AdminOverview.render()">Refresh</button>
+                </div>
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Project</th>
+                    <th>Devices (Online/Total)</th>
+                    <th>Alerts (last 50)</th>
+                    <th>Month Energy (kWh)</th>
+                    <th>Month Cost (฿)</th>
+                  </tr>
+                </thead>
+                <tbody id="ovBody"><tr><td colspan="5" class="text-muted" style="text-align:center;padding:20px;">Loading...</td></tr></tbody>
+              </table>
+            </div>
+            <div class="table-card" style="margin-top:12px;">
+              <div class="table-header">
+                <div class="table-title">Organization Trend</div>
+                <div class="table-actions">
+                  <select id="ovRange" class="popup-select" onchange="window.AdminOverview.renderChart()">
+                    <option value="day">รายวัน</option>
+                    <option value="month">รายเดือน</option>
+                    <option value="year">รายปี</option>
+                  </select>
+                  <input id="ovMonthPicker" type="month" style="margin-left:8px;" onchange="window.AdminOverview.renderChart()" />
+                  <input id="ovYearPicker" type="number" min="2000" max="2100" style="width:80px;margin-left:8px;" onchange="window.AdminOverview.renderChart()" />
+                </div>
+              </div>
+              <div style="height:280px;">
+                <canvas id="ovChart"></canvas>
+              </div>
+            </div>
+            <div class="table-card" style="margin-top:12px;">
+              <div class="table-header">
+                <div class="table-title">Alert Inbox (latest)</div>
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>Project</th>
+                    <th>Device</th>
+                    <th>Severity</th>
+                    <th>Message</th>
+                  </tr>
+                </thead>
+                <tbody id="ovAlertsList"><tr><td colspan="5" class="text-muted" style="text-align:center;padding:20px;">Loading...</td></tr></tbody>
+              </table>
+            </div>
+          </div>`;
+        window.AdminOverview.render();
+        window.AdminOverview.initChart();
+        const mp = document.getElementById('ovMonthPicker'); if (mp && !mp.value) mp.value = new Date().toISOString().slice(0,7);
+        const yp = document.getElementById('ovYearPicker'); if (yp && !yp.value) yp.value = new Date().getFullYear();
+      }
+    }
+
+    async function post(url, body) {
+      return fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+    }
+
+    async function createProject() {
+      const name = document.getElementById("popup-name").value || "project";
+      const resultDiv = document.getElementById("popup-result");
+
+      try {
+        const res = await post("/api/projects", { name });
+        const j = await res.json();
+
+        await fetch(`/api/active/${j.project_id}`, { method: "POST" });
+
+        resultDiv.textContent = "✓ Created: " + j.project_id;
+        resultDiv.style.display = "block";
+
+        setTimeout(() => {
+          closePopup();
+          loadActiveProject();
+        }, 1200);
+
+      } catch (err) {
+        resultDiv.textContent = "✗ Error";
+        resultDiv.style.display = "block";
+      }
+    }
+
+    async function startProject() {
+      const pid = document.getElementById("pid").value;
+      if (!pid) return alert("Enter project ID");
+      await post("/api/control/" + encodeURIComponent(pid) + "/start", {});
+      alert("Start requested");
+    }
+
+    async function stopProject() {
+      const pid = document.getElementById("pid").value;
+      if (!pid) return alert("Enter project ID");
+      await post("/api/control/" + encodeURIComponent(pid) + "/stop", {});
+      alert("Stop requested");
+    }
+
+    document.getElementById("popup-overlay").addEventListener("click", function (e) {
+      if (e.target === this) closePopup();
+    });
+
+    function openOpenPopup() {
+      document.getElementById("popup-open-overlay").classList.add("active");
+      loadProjectList();
+    }
+
+    function closeOpenPopup() {
+      document.getElementById("popup-open-overlay").classList.remove("active");
+    }
+
+    async function loadProjectList() {
+      const select = document.getElementById("open-project-select");
+      select.innerHTML = `<option>Loading...</option>`;
+
+      try {
+        const res = await fetch("/api/projects/list");
+
+        if (!res.ok) {
+          select.innerHTML = `<option>Error loading projects</option>`;
+          return;
+        }
+
+        const data = await res.json();
+        select.innerHTML = "";
+
+        if (!data.projects || data.projects.length === 0) {
+          select.innerHTML = `<option>No projects found</option>`;
+          return;
+        }
+
+        data.projects.forEach(p => {
+          select.insertAdjacentHTML("beforeend",
+            `<option value="${p.project_id}">${p.project_name}</option>`);
+        });
+      } catch (err) {
+        console.error("Load project list error:", err);
+        select.innerHTML = `<option>Error: ${err.message}</option>`;
+      }
+    }
+
+    async function confirmOpenProject() {
+      const pid = document.getElementById("open-project-select").value;
+      if (!pid) return alert("No project selected");
+
+      const res = await fetch(`/api/active/${pid}`, { method: "POST" });
+
+      if (!res.ok) {
+        alert("Cannot open project");
+        return;
+      }
+
+      closeOpenPopup();
+      loadActiveProject();
+
+      document.getElementById("content-area").innerHTML =
+        `<h1>Project Loaded</h1><p>Project: <b>${pid}</b></p>`;
+    }
+
+    loadActiveProject();
+
+    // Load scripts
+    (function () {
+      const scripts = [
+        'add_device.js',
+        'admin_overview.js?v=' + Date.now(),
+        'photoview_admin/photoview_admin.js?v=' + Date.now(),
+        'report_admin/add_report.js?v=' + Date.now(),
+        'billing_user/billing_user_spa.js?v=' + Date.now(),
+        'billing_admin/billing_admin_spa.js?v=' + Date.now(),
+        'alert_admin/alert_admin_spa.js?v=' + Date.now(),
+        'information.js'
+      ];
+      scripts.forEach(src => {
+        const s = document.createElement('script');
+        s.src = src;
+        document.body.appendChild(s);
+      });
+    })();
+
+    // User profile dropdown + logout
+    (function(){
+      const profile = document.getElementById('userProfile');
+      const menu = document.getElementById('userMenu');
+      const btn = document.getElementById('btnLogout');
+      if (profile && menu && btn) {
+        profile.addEventListener('click', (e) => {
+          e.stopPropagation();
+          menu.style.display = (menu.style.display === 'none' || !menu.style.display) ? 'block' : 'none';
+        });
+        document.addEventListener('click', (e) => {
+          if (!profile.contains(e.target) && !menu.contains(e.target)) {
+            menu.style.display = 'none';
+          }
+        });
+        menu.addEventListener('click', (e) => e.stopPropagation());
+        btn.addEventListener('click', () => { window.doLogout(); });
+      }
+    })();
+
+    window.doLogout = async function () {
+      try { await fetch('/api/logout', { method: 'POST', credentials: 'include' }); } catch (e) {}
+      try { sessionStorage.clear(); localStorage.clear(); } catch(e) {}
+      setTimeout(() => { window.location.href = '/frontend/login.html'; }, 300);
+    }
+    async function renderAdminOverview() {
+      const body = document.getElementById('ovBody');
+      try {
+        const pr = await fetch('/public/projects');
+        const pj = await pr.json();
+        const projects = pj.projects || [];
+        document.getElementById('ovProjects').textContent = `Projects: ${projects.length}`;
+        let totalAlerts = 0, totalOnline = 0, totalDevices = 0, monthEnergy = 0, monthCost = 0;
+        const rows = [];
+        const year = new Date().getFullYear();
+        const month = new Date().toISOString().slice(0,7);
+        const tasks = projects.map(async (p) => {
+          const pid = p.project_id;
+          const [sumRes, alertRes, statusRes] = await Promise.all([
+            fetch(`/api/billing/summary?project_id=${encodeURIComponent(pid)}`),
+            fetch(`/api/alert/logs?project_id=${encodeURIComponent(pid)}`),
+            fetch(`/api/alert/device/status?project_id=${encodeURIComponent(pid)}`)
+          ]);
+          const sumJs = await sumRes.json().catch(()=>({}));
+          const d = sumJs.data || sumJs || {};
+          const alerts = await alertRes.json().catch(()=>[]);
+          const status = await statusRes.json().catch(()=>({}));
+          const devIds = Object.keys(status || {});
+          const online = devIds.filter(id => (status[id]||{}).online).length;
+          totalOnline += online; totalDevices += devIds.length;
+          const mE = Number(d.month_units || 0); const mC = Number(d.month_money || 0);
+          monthEnergy += mE; monthCost += mC; totalAlerts += (alerts||[]).length;
+          rows.push(`
+            <tr>
+              <td><strong>${p.project_name}</strong><div class="text-muted">${pid}</div></td>
+              <td class="font-mono">${online}/${devIds.length}</td>
+              <td class="font-mono">${(alerts||[]).length}</td>
+              <td class="font-mono text-primary">${mE.toFixed(3)}</td>
+              <td class="font-mono">${new Intl.NumberFormat('th-TH').format(mC.toFixed(2))}</td>
+            </tr>`);
+        });
+        await Promise.all(tasks);
+        document.getElementById('ovAlertCount').textContent = totalAlerts;
+        document.getElementById('ovDevices').textContent = `Devices: ${totalOnline}/${totalDevices}`;
+        document.getElementById('ovMonth').textContent = `Month Cost: ${new Intl.NumberFormat('th-TH').format(monthCost.toFixed(2))} ฿`;
+        body.innerHTML = rows.join('') || '<tr><td colspan="5" class="text-muted" style="text-align:center;padding:20px;">No projects</td></tr>';
+      } catch (e) {
+        body.innerHTML = `<tr><td colspan="5" class="text-muted" style="text-align:center;padding:20px;">Failed to load</td></tr>`;
+      }
+    }
+  </script>
+</body>
+
+</html>

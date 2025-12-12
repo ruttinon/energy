@@ -1,0 +1,118 @@
+{
+  "template_id": "billing_basic",
+  "name": "ใบเสร็จรับเงิน (พื้นฐาน)",
+  "desc": "เทมเพลตสำหรับออกใบเสร็จค่าไฟฟ้า",
+  "pages": [
+    {
+      "w": 794,
+      "h": 1123,
+      "background": null
+    }
+  ],
+  "elements": [
+    {
+      "page": 0,
+      "type": "text",
+      "html": "<h1 style='text-align:center;color:#ff0033;'>ใบเสร็จรับเงิน</h1>",
+      "left": 50,
+      "top": 40,
+      "width": 694,
+      "height": 60,
+      "style": {
+        "fontSize": "28px",
+        "fontFamily": "Kanit",
+        "color": "#ff0033",
+        "textAlign": "center",
+        "fontWeight": "bold"
+      }
+    },
+    {
+      "page": 0,
+      "type": "text",
+      "html": "<b>เลขที่:</b> BILL-{{device_id}}-{{date}}",
+      "left": 50,
+      "top": 120,
+      "width": 694,
+      "height": 30,
+      "style": {
+        "fontSize": "16px",
+        "fontFamily": "Kanit",
+        "color": "#000000"
+      }
+    },
+    {
+      "page": 0,
+      "type": "text",
+      "html": "<b>วันที่:</b> {{date}}",
+      "left": 50,
+      "top": 160,
+      "width": 694,
+      "height": 30,
+      "style": {
+        "fontSize": "16px",
+        "fontFamily": "Kanit",
+        "color": "#000000"
+      }
+    },
+    {
+      "page": 0,
+      "type": "text",
+      "html": "\n                <div style='padding:20px; background:#f5f5f5; border-radius:8px;'>\n                    <h3 style='color:#333; margin:0 0 10px 0;'>ข้อมูลอุปกรณ์</h3>\n                    <p style='margin:5px 0;'><b>รหัสอุปกรณ์:</b> {{device_id}}</p>\n                    <p style='margin:5px 0;'><b>ชื่ออุปกรณ์:</b> {{device_name}}</p>\n                </div>\n                ",
+      "left": 50,
+      "top": 210,
+      "width": 694,
+      "height": 120,
+      "style": {
+        "fontSize": "14px",
+        "fontFamily": "Kanit",
+        "color": "#000000",
+        "background": "#f5f5f5"
+      }
+    },
+    {
+      "page": 0,
+      "type": "table",
+      "html": "\n                <table border='1' style='width:100%; border-collapse:collapse; margin-top:20px;'>\n                    <thead style='background:#ff0033; color:white;'>\n                        <tr>\n                            <th style='padding:12px; text-align:left;'>รายการ</th>\n                            <th style='padding:12px; text-align:right;'>จำนวน</th>\n                            <th style='padding:12px; text-align:right;'>หน่วย</th>\n                        </tr>\n                    </thead>\n                    <tbody>\n                        <tr>\n                            <td style='padding:10px;'>พลังงานไฟฟ้า</td>\n                            <td style='padding:10px; text-align:right;'>{{energy}}</td>\n                            <td style='padding:10px; text-align:right;'>kWh</td>\n                        </tr>\n                        <tr>\n                            <td style='padding:10px;'>ราคาต่อหน่วย</td>\n                            <td style='padding:10px; text-align:right;'>{{price_per_unit}}</td>\n                            <td style='padding:10px; text-align:right;'>บาท/kWh</td>\n                        </tr>\n                    </tbody>\n                </table>\n                ",
+      "left": 50,
+      "top": 360,
+      "width": 694,
+      "height": 200,
+      "style": {
+        "fontSize": "14px",
+        "fontFamily": "Kanit",
+        "color": "#000000"
+      }
+    },
+    {
+      "page": 0,
+      "type": "text",
+      "html": "\n                <div style='background:#ff0033; color:white; padding:20px; border-radius:8px; text-align:right;'>\n                    <h2 style='margin:0;'>ยอดรวมทั้งสิ้น: {{total_money}} บาท</h2>\n                </div>\n                ",
+      "left": 50,
+      "top": 600,
+      "width": 694,
+      "height": 80,
+      "style": {
+        "fontSize": "24px",
+        "fontFamily": "Kanit",
+        "color": "#ffffff",
+        "background": "#ff0033",
+        "fontWeight": "bold"
+      }
+    },
+    {
+      "page": 0,
+      "type": "text",
+      "html": "<p style='text-align:center; color:#666;'>ขอบคุณที่ใช้บริการ | AE Energy System</p>",
+      "left": 50,
+      "top": 1000,
+      "width": 694,
+      "height": 40,
+      "style": {
+        "fontSize": "12px",
+        "fontFamily": "Kanit",
+        "color": "#666666",
+        "textAlign": "center"
+      }
+    }
+  ]
+}

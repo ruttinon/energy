@@ -1,0 +1,485 @@
+/* ============================================================
+   🎨 MODERN ENERGY DASHBOARD - REDESIGNED UI
+   Clean, Minimalist, High-Tech Design
+   ============================================================ */
+
+/* ===================== FONT IMPORT ===================== */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* ===================== CSS VARIABLES ===================== */
+:root {
+  /* Primary Colors */
+  --primary-cyan: #06b6d4;
+  --primary-blue: #3b82f6;
+  --accent-teal: #22d3ee;
+  --accent-indigo: #6366f1;
+  --accent-purple: #a78bfa;
+  --danger: #ef4444;
+  --success: #10b981;
+  --warning: #f59e0b;
+  
+  /* Background Layers */
+  --bg-darkest: #0a1628;
+  --bg-dark: #0f172a;
+  --bg-medium: #1e293b;
+  --bg-card: rgba(15, 23, 42, 0.85);
+  
+  /* Text Colors */
+  --text-primary: #e0f2fe;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  
+  /* Borders & Effects */
+  --border-color: rgba(6, 182, 212, 0.2);
+  --border-hover: rgba(6, 182, 212, 0.5);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.3);
+  
+  /* Transitions */
+  --transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ===================== RESET & BASE ===================== */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: linear-gradient(135deg, #0a1628 0%, #0f172a 50%, #1e293b 100%);
+  color: var(--text-primary);
+  line-height: 1.6;
+  overflow: hidden;
+  min-height: 100vh;
+}
+
+/* ===================== HEADER ===================== */
+header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: rgba(15, 23, 42, 0.98);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 24px;
+  z-index: 1000;
+  box-shadow: var(--shadow-md);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.toggle {
+  width: 36px;
+  height: 36px;
+  background: rgba(6, 182, 212, 0.1);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--primary-cyan);
+  font-size: 18px;
+  cursor: pointer;
+  transition: all var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toggle:hover {
+  background: rgba(6, 182, 212, 0.2);
+  border-color: var(--primary-cyan);
+  transform: scale(1.05);
+}
+
+.logo-icon {
+  width: 28px;
+  height: 28px;
+}
+
+.logo-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.brand {
+  font-family: 'Orbitron', monospace;
+  font-size: 14px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: 1.5px;
+}
+
+.tagline {
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pill {
+  padding: 6px 16px;
+  background: rgba(6, 182, 212, 0.1);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  font-family: 'Orbitron', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary-cyan);
+}
+
+.btn {
+  padding: 8px 16px;
+  background: rgba(6, 182, 212, 0.1);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.btn:hover {
+  background: rgba(6, 182, 212, 0.2);
+  border-color: var(--primary-cyan);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+}
+
+/* ===================== LAYOUT ===================== */
+.layout {
+  display: flex;
+  margin-top: 60px;
+  height: calc(100vh - 60px);
+}
+
+/* ===================== SIDEBAR ===================== */
+.sidebar {
+  width: 240px;
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(20px);
+  border-right: 1px solid var(--border-color);
+  padding: 20px 16px;
+  overflow-y: auto;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: fixed;
+  left: 0;
+  top: 60px;
+  bottom: 0;
+  z-index: 900;
+}
+
+.sidebar.collapsed {
+  transform: translateX(-240px);
+}
+
+.section-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin: 24px 0 12px 0;
+  padding-left: 8px;
+}
+
+.section-title:first-child {
+  margin-top: 0;
+}
+
+.tile {
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all var(--transition);
+  cursor: pointer;
+}
+
+.tile:hover {
+  background: rgba(6, 182, 212, 0.1);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+  transform: translateX(2px);
+}
+
+.tile.active {
+  background: rgba(6, 182, 212, 0.15);
+  border-color: var(--primary-cyan);
+  color: var(--primary-cyan);
+}
+
+details summary {
+  cursor: pointer;
+  outline: none;
+  font-weight: 600;
+  padding: 8px;
+  margin-bottom: 12px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.select {
+  width: 100%;
+  padding: 8px;
+  background: rgba(6, 182, 212, 0.05);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.select:focus {
+  outline: none;
+  border-color: var(--primary-cyan);
+  background: rgba(6, 182, 212, 0.1);
+}
+
+/* ===================== CONTENT AREA ===================== */
+.content {
+  flex: 1;
+  margin-left: 240px;
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  padding: 0;
+  margin-top: 0;
+  margin-right: 0;
+  margin-bottom: 0;
+}
+
+.sidebar.collapsed ~ .content {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+/* ===================== TAB NAVIGATION ===================== */
+.tab-nav {
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border-color);
+  padding: 0;
+  display: flex;
+  gap: 0;
+  align-items: stretch;
+  overflow-x: auto;
+  flex-shrink: 0;
+  height: 48px;
+}
+
+/* ซ่อน scrollbar แนวนอนของแท็บบาร์ */
+.tab-nav {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.tab-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.tab-item {
+  padding: 0 20px;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  border-radius: 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 100%;
+  position: relative;
+}
+
+.tab-item:hover {
+  background: rgba(6, 182, 212, 0.08);
+  border-bottom-color: rgba(6, 182, 212, 0.3);
+  color: var(--text-secondary);
+}
+
+.tab-item.active {
+  background: rgba(6, 182, 212, 0.12);
+  border-bottom-color: var(--primary-cyan);
+  color: var(--primary-cyan);
+}
+
+.tab-item.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--primary-cyan), var(--primary-blue));
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.5);
+}
+
+.tab-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 0;
+  align-items: stretch;
+  padding: 8px 12px;
+}
+
+.action-btn {
+  padding: 0 16px;
+  background: rgba(6, 182, 212, 0.1);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  margin-left: 8px;
+}
+
+.action-btn:hover {
+  background: rgba(6, 182, 212, 0.2);
+  border-color: var(--primary-cyan);
+  color: var(--text-primary);
+}
+
+.action-btn.primary {
+  background: linear-gradient(135deg, var(--primary-cyan), var(--primary-blue));
+  border-color: var(--primary-cyan);
+  color: white;
+}
+
+.action-btn.primary:hover {
+  box-shadow: 0 0 16px rgba(6, 182, 212, 0.4);
+  transform: translateY(-1px);
+}
+
+/* ===================== DASHBOARD CONTENT ===================== */
+#dash-content {
+  flex: 1;
+  padding: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  margin: 0;
+}
+
+/* ลบ padding ทั้งหมดของ children ใน dash-content */
+#dash-content > * {
+  margin: 0;
+  padding: 0;
+}
+
+/* ถ้ามี container ภายใน ให้เต็มพื้นที่ */
+#dash-content .container,
+#dash-content .dashboard-container,
+#dash-content > div {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* ===================== RESPONSIVE ===================== */
+@media (max-width: 1024px) {
+  .sidebar {
+    transform: translateX(0);
+  }
+  
+  .content {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  header {
+    padding: 0 16px;
+  }
+  
+  .logo-text {
+    display: none;
+  }
+  
+  .pill {
+    padding: 6px 12px;
+    font-size: 11px;
+  }
+  
+  .tab-nav {
+    padding: 12px 16px;
+  }
+  
+  .tab-item {
+    padding: 6px 12px;
+    font-size: 11px;
+  }
+}
+
+/* ===================== SCROLLBAR ===================== */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--primary-cyan), var(--primary-blue));
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--accent-teal), var(--primary-cyan));
+}
+
+/* ===================== UTILITIES ===================== */
+.hidden {
+  display: none !important;
+}
