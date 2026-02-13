@@ -1,384 +1,614 @@
-import os
-import json
 from datetime import datetime, timedelta
-from typing import Dict, Any, List
-from .billing_storage import upsert_daily_usage, get_daily_records, get_monthly_records, get_yearly_records
-from services.backend.api.xlsx_storage import save_billing_daily, save_billing_weekly, save_billing_monthly, save_billing_yearly
-from services.backend.api.xlsx_storage import generate_monthly_summary
+from typing import List, Optional
+from sqlalchemy import func
+from sqlalchemy.orm import Session
+from . import repository, schemas, models, database
 
-print(f"[Billing] Module Loaded: {datetime.now()}")
+class BillingService:
+    def __init__(self, db: Session = None):
+        # db is optional now, we prefer opening per-project session
+        self.db_fallback = db
+        # self.repo will be created on the fly or we update repo too.
+        
+    def _get_project_repo(self, project_id: str):
+        from . import database
+        session = database.get_project_session(project_id)
+        return repository.BillingRepository(session), session
 
-# Path helper
-def _get_project_config_path(project_id: str) -> str:
-    return os.path.join(
-        "projects", project_id, "billing", "config.json"
-    )
-
-def _get_readings_path(project_id: str) -> str:
-    return os.path.join(
-        "projects", project_id, "data", "readings.json"
-    )
-
-def _get_project_config(project_id: str) -> Dict:
-    path = os.path.join("projects", project_id, "ConfigDevice.json")
-    if os.path.exists(path):
+    def get_config(self, project_id: str) -> schemas.ConfigResponse:
+        repo, session = self._get_project_repo(project_id)
         try:
-            with open(path, 'r', encoding='utf-8') as f:
-                return json.load(f)
+            cfg = repo.get_config(project_id)
+            if not cfg:
+                return schemas.ConfigResponse(
+                    project_id=project_id,
+                    price_per_unit=5.0,
+                    currency="THB",
+                    vat_rate=7.0,
+                    ft_rate=0.0,
+                    updated_at=datetime.utcnow()
+                )
+            try:
+                # Pydantic v2-compatible conversion
+                return schemas.ConfigResponse.model_validate(cfg, from_attributes=True)
+            except Exception:
+                # Fallback manual mapping
+                return schemas.ConfigResponse(
+                    project_id=getattr(cfg, "project_id", project_id),
+                    price_per_unit=getattr(cfg, "price_per_unit", 0.0),
+                    currency=getattr(cfg, "currency", "THB"),
+                    vat_rate=getattr(cfg, "vat_rate", 7.0),
+                    ft_rate=getattr(cfg, "ft_rate", 0.0),
+                    updated_at=getattr(cfg, "updated_at", datetime.utcnow()),
+                    billing_day=getattr(cfg, "billing_day", 25),
+                    cutoff_day=getattr(cfg, "cutoff_day", 20)
+                )
+        except Exception:
+            # Complete fallback
+            return schemas.ConfigResponse(
+                project_id=project_id,
+                price_per_unit=5.0,
+                currency="THB",
+                vat_rate=7.0,
+                ft_rate=0.0,
+                updated_at=datetime.utcnow()
+            )
+        finally:
+            if session:
+                session.close()
+
+    def update_config(self, project_id: str, config: schemas.ConfigUpdate):
+        repo, session = self._get_project_repo(project_id)
+        try:
+            return repo.update_config(project_id, config)
+        finally:
+            session.close()
+
+    def calculate_sync(self, project_id: str, readings: dict):
+        """
+        Main logic to process real-time readings and update DailyUsage.
+        """
+        # Debug logging
+        try:
+            with open("services/backend/data/billing_debug.log", "a") as f:
+                f.write(f"[{datetime.now()}] Syncing {project_id}, devices: {len(readings)}\n")
         except:
             pass
-    return {}
-
-# Config Logic
-def get_billing_config(project_id: str) -> Dict:
-    path = _get_project_config_path(project_id)
-    default_config = {"price_per_unit": 5.0, "currency": "THB"}
-    
-    if not os.path.exists(path):
-        return default_config
-    
-    try:
-        with open(path, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    except Exception as e:
-        print(f"[Billing] Error reading config: {e}")
-        return default_config
-
-def update_billing_config(project_id: str, config: Dict) -> bool:
-    path = _get_project_config_path(project_id)
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    try:
-        with open(path, 'w', encoding='utf-8') as f:
-            json.dump(config, f, indent=2, ensure_ascii=False)
-        return True
-    except Exception as e:
-        print(f"[Billing] Error saving config: {e}")
-        return False
-
-# Calculation Logic
-def sync_billing_for_project(project_id: str, readings: Dict = None):
-    """
-    Syncs current readings to the billing database for today.
-    Should be called periodically or on-demand.
-    """
-    # 1. Get Config (Price)
-    cfg = get_billing_config(project_id)
-    price = float(cfg.get("price_per_unit", 5.0))
-    
-    # 2. Get Current Readings
-    if not readings:
-        # Fallback: try to read from project readings.json
+            
+        repo, session = self._get_project_repo(project_id)
         try:
-            path = _get_readings_path(project_id)
-            if os.path.exists(path):
-                with open(path, 'r', encoding='utf-8') as f:
-                    readings = json.load(f) or {}
-        except Exception as e:
-            readings = None
-    if not readings:
-        return
+            # 1. Get Rates
+            cfg = repo.get_config(project_id) # Using local repo instance
+            if not cfg:
+                # Helper to create if not exists inside update_config, but here we just need values
+                # Create a temporary config object with defaults
+                class MockConfig:
+                    price_per_unit = 5.0
+                    currency = "THB"
+                    vat_rate = 7.0
+                    ft_rate = 0.0
+                cfg = MockConfig()
 
-    # Debug
-    # print(f"[Billing] Syncing {len(readings)} devices for {project_id}")
+            today = datetime.now().strftime("%Y-%m-%d")
+            
+            # 2. Get existing state for today to efficiently update
+            existing_today = {r.device_id: r for r in repo.get_daily_usage(project_id, today)}
 
-    today = datetime.now().strftime("%Y-%m-%d")
+            for device_id, data in readings.items():
+                values = data.get("values", {})
+                ae = None
+                # Extract Energy
     
-    # 3. Get Yesterday's Data/Initial State if needed (Logic simplified for resilience)
-    # We will fetch today's current DB record to compare or update
-    
-    existing_today = {r['device_id']: r for r in get_daily_records(project_id, today)}
-    dev_cfg = _get_project_config(project_id)
-    device_map = {}
-    for conv in dev_cfg.get('converters', []):
-        for d in conv.get('devices', []):
-            device_map[str(d['id'])] = d.get('name', str(d['id']))
-    
-    for device_id, data in readings.items():
-         # Extract Active Energy
-        values = data.get("values", {})
-        ae = None
-        
-        # Try common keys
-        for k in ["ActiveEnergy_kWh", "ActiveEnergy", "TotalActiveEnergy", "kWh", "active_energy", "energy"]:
-            if k in values and values[k] is not None:
+                for k in ["ActiveEnergy_kWh", "ActiveEnergy", "TotalActiveEnergy", "kWh", "energy_active", "Active Energy", "Import Active Energy"]:
+                    if k in values and values[k] is not None:
+                        try:
+                            ae = float(values[k])
+                            break
+                        except:
+                            pass
+                
+                if ae is None:
+                    # Try case-insensitive search
+                    for k, v in values.items():
+                        if "energy" in k.lower() and "active" in k.lower():
+                            try:
+                                ae = float(v)
+                                break
+                            except:
+                                pass
+                
+                if ae is None:
+                    continue
+                
+                # DEBUG: Log the value
                 try:
-                    ae = float(values[k])
-                    print(f"[Billing] Found energy for {device_id}: {ae} (key={k})")
-                    break
+                    with open("services/backend/data/billing_debug.log", "a") as f:
+                        f.write(f"  [DEBUG] Device {device_id}: ActiveEnergy = {ae}\n")
                 except:
                     pass
-        
-        if ae is None:
-            # Debug: List available keys if energy not found
-            # print(f"[Billing] No energy key found for {device_id}. Keys: {list(values.keys())}")
-            continue
-            
-        # Logic:
-        # If record exists today: meter_start is already set. meter_end = ae. used = end - start.
-        # If no record today: try to find start from yesterday? OR just initialize start = ae (0 usage first tick)
-        
-        rec = existing_today.get(device_id)
-        
-        if rec:
-            meter_start = rec['meter_start']
-            # Reset detection?
-            if ae < meter_start: 
-                # Meter reset or replaced
-                meter_start = ae 
+    
+                # Logic
+                meter_start = ae
+                meter_end = ae
+                energy_used = 0.0
+    
+                if device_id in existing_today:
+                    rec = existing_today[device_id]
+                    meter_start = rec.meter_start
+                    # Reset check (unlikely with accumulators, but safe to have)
+                    if ae < meter_start:
+                        meter_start = ae
+                    
+                    meter_end = ae
+                    energy_used = max(0, meter_end - meter_start)
+                else:
+                    # Cold start for today. Check for yesterday/previous day
+                    # Use 'repo' to call get_last_usage. BillingRepository needs to support it. 
+                    # Assuming repo.get_last_usage exists (it was used as self.repo.get_last_usage before)
+                    last_rec = repo.get_last_usage(project_id, str(device_id), today)
+                    if last_rec:
+                        # Continuity: Today's start = Previous end
+                        meter_start = last_rec.meter_end
+                        # Handle rollover or meter replacement case
+                        if ae < meter_start:
+                             # Assume meter reset or new meter, start fresh from current
+                             meter_start = ae
+                    else:
+                        # Brand new device, never seen before
+                        meter_start = ae
+                    
+                    meter_end = ae
+                    energy_used = max(0, meter_end - meter_start)
+    
+                # Calculate Cost with FT and VAT
+                # Formula: Energy * (Base + FT) * (1 + VAT/100)
+                base_price = cfg.price_per_unit or 0.0
+                ft = cfg.ft_rate or 0.0
+                vat_mul = 1 + ((cfg.vat_rate or 7.0) / 100.0)
                 
-            meter_end = ae
-            energy_used = max(0, meter_end - meter_start)
-            cost = energy_used * price
-            
-            upsert_daily_usage(project_id, device_id, today, energy_used, cost, meter_start, meter_end, price)
-            try:
-                save_billing_daily(project_id, {
-                    'date': today,
-                    'device_id': device_id,
-                    'device_name': device_map.get(str(device_id), str(device_id)),
-                    'meter_start': meter_start,
-                    'meter_end': meter_end,
-                    'energy_used': energy_used,
-                    'price_per_unit': price,
-                    'cost': cost,
-                    'last_update': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                unit_price = base_price + ft
+                cost = energy_used * unit_price * vat_mul
+    
+                repo.upsert_daily_usage({
+                    "project_id": project_id,
+                    "device_id": str(device_id),
+                    "date": today,
+                    "meter_start": meter_start,
+                    "meter_end": meter_end,
+                    "energy_used": energy_used,
+                    "cost": cost,
+                    "price_snapshot": cfg.price_per_unit
                 })
-            except Exception:
-                pass
-        else:
-            # First time seeing this device today
-            # ideally check yesterday's end. For now, simpliest approach: 
-            # If we call this frequently, the "first tick" of the day sets the start.
-            # If we miss 00:00, we miss usage involved before the first tick.
-            # For robustness, we assume start = ae (0 usage) initally, unless we have yesterday records.
-            # (In a real production system we'd query `date=yesterday`)
-            
-            # Simple Init
-            upsert_daily_usage(project_id, device_id, today, 0.0, 0.0, ae, ae, price)
+
+        except Exception as e:
+            print(f"Sync Billing Error: {e}")
             try:
-                save_billing_daily(project_id, {
-                    'date': today,
-                    'device_id': device_id,
-                    'device_name': device_map.get(str(device_id), str(device_id)),
-                    'meter_start': ae,
-                    'meter_end': ae,
-                    'energy_used': 0.0,
-                    'price_per_unit': price,
-                    'cost': 0.0,
-                    'last_update': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                })
-            except Exception:
+                with open("services/backend/data/billing_debug.log", "a") as f:
+                    f.write(f"ERROR: {e}\n")
+            except:
                 pass
+        finally:
+            session.close()
 
-def get_all_bills_today(project_id: str):
-    today = datetime.now().strftime("%Y-%m-%d")
-    recs = get_daily_records(project_id, today)
-    dev_config = _get_project_config(project_id)
-    device_map = {}
-    for conv in dev_config.get('converters', []):
-        for d in conv.get('devices', []):
-            device_map[str(d['id'])] = d.get('name', str(d['id']))
-    items = []
-    for r in recs:
-        did = r['device_id']
-        items.append({
-            "device_id": did,
-            "device_name": device_map.get(did, did),
-            "date": today,
-            "meter_start": r['meter_start'],
-            "meter_end": r['meter_end'],
-            "energy_used": r['energy_used'],
-            "total_money": r['cost'],
-            "price_per_unit": r.get('price_per_unit', 0),
-            "last_update": r.get('last_update')
-        })
-    return items
-
-def get_device_bill(project_id: str, device_id: str):
-    today = datetime.now().strftime("%Y-%m-%d")
-    recs = get_daily_records(project_id, today)
-    dev_config = _get_project_config(project_id)
-    device_map = {}
-    for conv in dev_config.get('converters', []):
-        for d in conv.get('devices', []):
-            device_map[str(d['id'])] = d.get('name', str(d['id']))
-    for r in recs:
-        if str(r['device_id']) == str(device_id):
-            did = r['device_id']
-            return {
-                "device_id": did,
-                "device_name": device_map.get(did, did),
-                "date": today,
-                "meter_start": r['meter_start'],
-                "meter_end": r['meter_end'],
-                "energy_used": r['energy_used'],
-                "total_money": r['cost'],
-                "price_per_unit": r.get('price_per_unit', 0),
-                "last_update": r.get('last_update')
-            }
-    return None
-
-def export_billing_to_excel_today(project_id: str):
-    today = datetime.now().strftime("%Y-%m-%d")
-    recs = get_daily_records(project_id, today)
-    dev_config = _get_project_config(project_id)
-    device_map = {}
-    for conv in dev_config.get('converters', []):
-        for d in conv.get('devices', []):
-            device_map[str(d['id'])] = d.get('name', str(d['id']))
-    for r in recs:
-        try:
-            save_billing_daily(project_id, {
-                'date': today,
-                'device_id': r['device_id'],
-                'device_name': device_map.get(str(r['device_id']), str(r['device_id'])),
-                'meter_start': r['meter_start'],
-                'meter_end': r['meter_end'],
-                'energy_used': r['energy_used'],
-                'price_per_unit': r.get('price_per_unit', 0),
-                'cost': r['cost'],
-                'last_update': r.get('last_update')
-            })
-        except Exception:
-            pass
-    now = datetime.now()
-    try:
-        generate_monthly_summary(project_id, now.strftime('%Y'), now.strftime('%m'))
-    except Exception:
-        pass
-
-def export_billing_aggregates(project_id: str):
-    dev_config = _get_project_config(project_id)
-    device_map = {}
-    for conv in dev_config.get('converters', []):
-        for d in conv.get('devices', []):
-            device_map[str(d['id'])] = d.get('name', str(d['id']))
-    year = datetime.now().strftime("%Y")
-    # Weekly per device
-    from .billing_storage import get_weekly_records, get_monthly_records, get_yearly_records
-    wrecs = get_weekly_records(project_id, year)
-    for w in wrecs:
-        save_billing_weekly(project_id, year, w['week'], str(w['device_id']), device_map.get(str(w['device_id']), str(w['device_id'])), w['total_energy'], w['total_cost'])
-    # Monthly per device for current month
-    month = datetime.now().strftime('%Y-%m')
-    mrecs = get_monthly_records(project_id, month)
-    for m in mrecs:
-        save_billing_monthly(project_id, month, str(m['device_id']), device_map.get(str(m['device_id']), str(m['device_id'])), m['total_energy'], m['total_cost'])
-    # Yearly total across months
-    yrecs = get_yearly_records(project_id, year)
-    total_energy = sum(r['total_energy'] or 0 for r in yrecs)
-    total_cost = sum(r['total_cost'] or 0 for r in yrecs)
-    save_billing_yearly(project_id, year, datetime.now().strftime('%m'), total_energy, total_cost)
-
-def get_dashboard_summary(project_id: str):
-    """
-    Returns summary for Today vs This Month
-    """
-    today = datetime.now().strftime("%Y-%m-%d")
-    month = today[:7]
-    
-    today_recs = get_daily_records(project_id, today)
-    month_recs = get_monthly_records(project_id, month)
-    
-    valid_today = [r for r in today_recs if r['energy_used'] > 0 or r['cost'] > 0]
-    
-    today_units = sum(r['energy_used'] for r in today_recs)
-    today_cost = sum(r['cost'] for r in today_recs)
-    
-    month_units = sum(r['total_energy'] for r in month_recs)
-    month_cost = sum(r['total_cost'] for r in month_recs)
-    
-    return {
-        "today_units": round(today_units, 3),
-        "today_money": round(today_cost, 2),
-        "month_units": round(month_units, 3),
-        "month_money": round(month_cost, 2),
-        "device_count": len(valid_today)
-    }
-
-def get_device_usage_list(project_id: str):
-    today = datetime.now().strftime("%Y-%m-%d")
-    recs = get_daily_records(project_id, today)
-    
-    # Enrich with device names from Config
-    dev_config = _get_project_config(project_id)
-    device_map = {}
-    for conv in dev_config.get('converters', []):
-        for d in conv.get('devices', []):
-            device_map[str(d['id'])] = d.get('name', str(d['id']))
-
-    result = {}
-    for r in recs:
-        did = r['device_id']
-        result[did] = {
-            "device_name": device_map.get(did, did),
-            "meter_now": r['meter_end'],
-            "total_used_today": r['energy_used'],
-            "money_today": r['cost'],
-            "last_update": r['last_update']
-        }
-
-    # Include offline or no-reading devices with zeros
-    for did, dname in device_map.items():
-        if did not in result:
-            result[did] = {
-                "device_name": dname,
-                "meter_now": 0.0,
-                "total_used_today": 0.0,
-                "money_today": 0.0,
-                "last_update": None
-            }
-    return result
-
-def get_convertor_summary_list(project_id: str):
-    today = datetime.now().strftime("%Y-%m-%d")
-    month = today[:7]
-    
-    today_recs = get_daily_records(project_id, today)
-    month_recs = get_monthly_records(project_id, month)
-    
-    # Need to group by converter
-    dev_config = _get_project_config(project_id)
-    
-    conv_map = {} # did -> conv_id
-    conv_names = {} # conv_id -> name
-    conv_devices = {} # conv_id -> [did]
-    
-    for conv in dev_config.get('converters', []):
-        cid = str(conv.get('id', 'unknown'))
-        cname = conv.get('name', 'Unknown')
-        conv_names[cid] = cname
-        conv_devices[cid] = []
-        for d in conv.get('devices', []):
-            did = str(d['id'])
-            conv_map[did] = cid
-            conv_devices[cid].append(did)
-            
-    # Aggregates
-    summary = {}
-    
-    for cid in conv_names:
-        summary[cid] = {
-            "convertor_name": conv_names[cid],
-            "meters": conv_devices[cid],
-            "today_units": 0.0,
-            "today_money": 0.0,
-            "month_units": 0.0,
-            "month_money": 0.0
-        }
+    def generate_invoices(self, project_id: str):
+        """
+        Generate monthly invoices based on CUT-OFF DATE.
+        If today is Jan 25, and cutoff is 20.
+        Current Cycle = Jan 20 to Feb 19 (if we are looking ahead) or Dec 20 to Jan 19?
         
-    for r in today_recs:
-        did = r['device_id']
-        cid = conv_map.get(did)
-        if cid and cid in summary:
-            summary[cid]["today_units"] += r['energy_used']
-            summary[cid]["today_money"] += r['cost']
+        Standard Practice:
+        If cutoff is 20.
+        Bill for 'Jan' covers: Dec 20 - Jan 19.
+        Generated on Jan 25 (Billing Day).
+        
+        Algorithm:
+        1. Determine current "Billing Month" based on today.
+        2. Calculate start_date and end_date of that cycle.
+        3. Query daily_usage between start_date and end_date.
+        """
+        cfg = self.get_config(project_id)
+        cutoff_day = cfg.cutoff_day or 20
+        
+        now = datetime.now()
+        
+        # Calculate Cycle Dates
+        # If today is after cutoff, we are in the *beginning* of next cycle, 
+        # BUT we probably want to generate bill for the *just finished* cycle?
+        # User request: "Check notification due today". 
+        # Usually invoices are generated for the period that JUST finished.
+        
+        # If today.day >= cutoff_day:
+        #    Cycle just finished is: previous_month.cutoff to this_month.(cutoff-1)
+        #    e.g. Jan 25 (cutoff 20). Period: Dec 20 - Jan 19.
+        # If today.day < cutoff_day:
+        #    Cycle just finished is: prev_prev_month.cutoff to previous_month.(cutoff-1)
+        #    e.g. Jan 10 (cutoff 20). Period: Nov 20 - Dec 19.
+        
+        # Simpler approach: 
+        # Always generate for the "Latest Completed Cycle".
+        
+        if now.day >= cutoff_day:
+            # We are past cutoff, so the cycle ending on 'cutoff_day' this month is complete.
+            # End Date = This Month, Cutoff Day - 1 (or Cutoff Day? usually end is exclusive or inclusive.. let's say up to Cutoff Day 00:00, or Cutoff Day is the start of new?)
+            # Let's say Cutoff 20 means: Jan 19 is last day. Jan 20 is start of new.
             
-    for r in month_recs:
-        did = r['device_id']
-        cid = conv_map.get(did)
-        if cid and cid in summary:
-            summary[cid]["month_units"] += r['total_energy']
-            summary[cid]["month_money"] += r['total_cost']
+            end_date_obj = datetime(now.year, now.month, cutoff_day) - timedelta(days=1)
+            # Start Date = Previous Month, Cutoff Day
+            # logic to get prev month
+            if now.month == 1:
+                start_date_obj = datetime(now.year - 1, 12, cutoff_day)
+            else:
+                start_date_obj = datetime(now.year, now.month - 1, cutoff_day)
+                
+            billing_month_str = now.strftime("%Y-%m") # Invoice for "Jan" (generated in Jan)
             
-    return summary
+        else:
+            # We are before cutoff. The last complete cycle ended last month.
+            # e.g. Jan 10. Cutoff 20. Last complete cycle ended Dec 19.
+            # End Date = Prev Month, Cutoff - 1
+             if now.month == 1:
+                end_date_obj = datetime(now.year - 1, 12, cutoff_day) - timedelta(days=1)
+                start_date_obj = datetime(now.year - 1, 11, cutoff_day)
+             else:
+                 if now.month == 2:
+                     end_date_obj = datetime(now.year, 1, cutoff_day) - timedelta(days=1)
+                     start_date_obj = datetime(now.year - 1, 12, cutoff_day)
+                 else:
+                     end_date_obj = datetime(now.year, now.month - 1, cutoff_day) - timedelta(days=1)
+                     start_date_obj = datetime(now.year, now.month - 2, cutoff_day)
+            
+             billing_month_str = (now.replace(day=1) - timedelta(days=1)).strftime("%Y-%m")
+
+        start_str = start_date_obj.strftime("%Y-%m-%d")
+        end_str = end_date_obj.strftime("%Y-%m-%d")
+        
+        repo, session = self._get_project_repo(project_id)
+        aggregates = session.query(
+            models.DailyUsage.device_id,
+            func.sum(models.DailyUsage.cost).label("total_cost")
+        ).filter(
+            models.DailyUsage.project_id == project_id,
+            models.DailyUsage.date >= start_str,
+            models.DailyUsage.date <= end_str
+        ).group_by(models.DailyUsage.device_id).all()
+        
+        invoices = []
+        for agg in aggregates:
+            device_id = agg.device_id
+            cost = agg.total_cost or 0.0
+            
+            if cost <= 0:
+                continue
+
+            # Create Invoice
+            inv = repo.create_invoice({
+                "project_id": project_id,
+                "target_id": device_id,
+                "target_name": f"Device {device_id}", 
+                "scope": "device",
+                "billing_month": billing_month_str, # e.g. "2024-01"
+                "amount": cost,
+                "due_date": (datetime.now() + timedelta(days=7)).strftime("%Y-%m-%d")
+            })
+            invoices.append(inv)
+            invoices.append(inv)
+        
+        # Trigger Limit/Cutoff Check
+        # This is a good place to check, as this is likely called daily or periodically
+        try:
+            self.check_overdue_and_cutoff(project_id)
+        except Exception as e:
+            print(f"[BILLING] Failed to run overdue check: {e}")
+
+        return invoices
+
+    def get_invoices(self, project_id: str):
+        repo, session = self._get_project_repo(project_id)
+        try:
+            items = repo.get_invoices(project_id)
+            if not items or len(items) == 0:
+                try:
+                    gen = self.generate_invoices(project_id)
+                    if gen and len(gen) > 0:
+                        items = repo.get_invoices(project_id)
+                except Exception as e:
+                    print(f"[BILLING] Auto-generate invoices failed: {e}")
+            return items
+        finally:
+            session.close()
+
+    def get_payments(self, project_id: str):
+        repo, session = self._get_project_repo(project_id)
+        try:
+            return repo.get_payments(project_id)
+        finally:
+            session.close()
+
+    # -----------------------------
+    # Payment Transaction helpers
+    # -----------------------------
+    def create_payment_transaction(self, project_id: str, invoice_id: int, amount: float, phone: str, metadata: dict = None):
+        repo, session = self._get_project_repo(project_id)
+        try:
+            tx = repo.create_payment_transaction({
+                'project_id': project_id,
+                'invoice_id': invoice_id,
+                'amount': amount,
+                'currency': 'THB',
+                'type': 'promptpay',
+                'metadata': {'phone': phone, **(metadata or {})}
+            })
+            return tx
+        finally:
+            session.close()
+
+    def get_payment_transaction(self, tx_id: str, project_id: str = None):
+        # project_id optional filter
+        repo, session = self._get_project_repo(project_id or '')
+        try:
+            return repo.get_payment_transaction(tx_id)
+        finally:
+            session.close()
+
+    def list_payment_transactions(self, project_id: str = None):
+        repo, session = self._get_project_repo(project_id or '')
+        try:
+            return repo.list_payment_transactions(project_id)
+        finally:
+            session.close()
+
+    def set_transaction_status_pending_review(self, tx_id: str):
+        repo, session = self._get_project_repo(None)
+        try:
+            return repo.update_payment_transaction_status(tx_id, 'pending_review')
+        finally:
+            session.close()
+
+    def confirm_payment_transaction(self, tx_id: str, confirmed_by: str = None, ref_no: str = None):
+        repo, session = self._get_project_repo(None)
+        try:
+            tx = repo.get_payment_transaction(tx_id)
+            if not tx:
+                raise ValueError('Transaction not found')
+            # Mark transaction as successful
+            repo.update_payment_transaction_status(tx_id, 'successful', ref_no=ref_no)
+            # Create a Payment record linked to invoice
+            if tx.invoice_id:
+                from . import schemas as sch
+                pay = sch.PaymentRecord(invoice_id=tx.invoice_id, amount=tx.amount, method='promptpay', ref_no=ref_no or tx.id)
+                repo.record_payment(pay)
+            return tx
+        finally:
+            session.close()
+
+    def record_payment(self, payment: schemas.PaymentRecord):
+        repo, session = self._get_project_repo(payment.project_id)
+        res = repo.record_payment(payment)
+        try:
+            inv = repo.db.query(models.Invoice).filter(models.Invoice.id == payment.invoice_id).first()
+            if inv and inv.status == models.PaymentStatus.PAID:
+                pid = inv.project_id
+                target_dev = inv.target_id
+                # Read current Active Energy from shared READINGS
+                from services.backend.shared_state import READINGS
+                ae = None
+                proj_map = READINGS.get(pid, {})
+                rec = proj_map.get(str(target_dev)) or {}
+                vals = rec.get("values") or {}
+                for k in ["ActiveEnergy_kWh", "ActiveEnergy", "TotalActiveEnergy", "kWh", "energy_active"]:
+                    if k in vals and vals[k] is not None:
+                        try:
+                            ae = float(vals[k])
+                            break
+                        except:
+                            pass
+                if ae is None:
+                    # Fallback to 0 baseline if meter not readable at this instant
+                    ae = 0.0
+                cfg = self.get_config(pid)
+                repo.reset_today_baseline(pid, target_dev, ae, (cfg.price_per_unit or 0.0))
+        except Exception as e:
+            print(f"[BILLING] Baseline reset failed: {e}")
+        finally:
+            session.close()
+        return res
+
+    def check_overdue_and_cutoff(self, project_id: str):
+        """
+        Check for overdue invoices and trigger cutoff if necessary.
+        User Rule: "If overdue > X days (e.g. 7), cut off DO1/2, Alarm 1/2, Digital Input 1/2".
+        Cutoff means: Turn OFF.
+        With Inverted Low logic: OFF = Write 1.
+        """
+        # 1. Get Unpaid Invoices
+        invoices = self.get_invoices(project_id)
+        unpaid = [inv for inv in invoices if inv.status != 'paid']
+        
+        cutoff_triggered = False
+        
+        now = datetime.now()
+        overdue_threshold_days = 7 # Configurable?
+        
+        for inv in unpaid:
+            if not inv.due_date:
+                continue
+            
+            # Simple date parse
+            try:
+                due_dt = datetime.strptime(str(inv.due_date), "%Y-%m-%d")
+                delta = (now - due_dt).days
+                
+                if delta > overdue_threshold_days:
+                    cutoff_triggered = True
+                    break
+            except:
+                pass
+        
+        if cutoff_triggered:
+            print(f"[BILLING] Overdue detected for {project_id}. Triggering CUTOFF.")
+            from services.backend.api.control.models import ControlDescriptor
+            from services.backend.api.control.service import control_service
+            
+            # Devices to cut? We need to know WHICH device. 
+            # The prompt implies "The System" or specific devices associated with the bill.
+            # Ideally each invoice targets a device.
+            # "Target Name": Device X.
+            
+            # If cutoff triggered, we might want to cut ALL devices in project? or just the one with overdue bill?
+            # Safe bet: Cut the device associated with the invoice.
+            
+            for inv in unpaid:
+                 try:
+                    due_dt = datetime.strptime(str(inv.due_date), "%Y-%m-%d")
+                    if (now - due_dt).days > overdue_threshold_days:
+                        # Cut off THIS device
+                        target_dev = inv.target_id
+                        print(f"[BILLING] Cutting off Device {target_dev} due to Invoice {inv.id}")
+                        
+                        targets = ["digital_output_1", "digital_output_2", "alarm_relay_1", "alarm_relay_2"]
+                        for t in targets:
+                            desc = ControlDescriptor(
+                                device_id=target_dev,
+                                control_target=t,
+                                control_mode="manual",
+                                action="OFF", # Logic handle: OFF -> 1 (Active Low)
+                                reason="Overdue Bill Auto-Cutoff",
+                                operator="system"
+                            )
+                            control_service.execute_control(desc)
+                 except Exception as e:
+                     print(f"[BILLING] Error executing cutoff: {e}")
+        else:
+             print(f"[BILLING] No overdue bills for {project_id}.")
+
+    def get_dashboard_summary(self, project_id: str):
+        repo, session = self._get_project_repo(project_id)
+        try:
+            now = datetime.now()
+            today_str = now.strftime("%Y-%m-%d")
+            
+            # Today
+            today_usage = repo.get_daily_usage(project_id, today_str)
+            today_units = sum(u.energy_used for u in today_usage)
+            today_cost = sum(u.cost for u in today_usage)
+            
+            # Cycle since last payment
+            last_paid_at = repo.get_last_payment_date(project_id)
+            # If no payment, use month start
+            cycle_start = None
+            if last_paid_at:
+                cycle_start = last_paid_at.strftime("%Y-%m-%d")
+            else:
+                cycle_start = now.strftime("%Y-%m-01")
+
+            # Aggregate since cycle_start to today
+            cycle_results = session.query(
+                models.DailyUsage.date,
+                func.sum(models.DailyUsage.energy_used).label("total_energy"),
+                func.sum(models.DailyUsage.cost).label("total_cost")
+            ).filter(
+                models.DailyUsage.project_id == project_id,
+                models.DailyUsage.date >= cycle_start,
+                models.DailyUsage.date <= today_str
+            ).group_by(models.DailyUsage.date).all()
+            month_units = sum(r.total_energy or 0 for r in cycle_results)
+            month_cost = sum(r.total_cost or 0 for r in cycle_results)
+            
+            # --- Compare vs Last Month (Same Period) ---
+            # Current: YYYY-MM-01 ... YYYY-MM-DD
+            # Previous: (YYYY-MM-1)-01 ... (YYYY-MM-1)-DD
+            
+            # 1. Get Start of Current Month
+            curr_month_start = now.replace(day=1)
+            
+            # 2. Get Start of Previous Month
+            # (First day of current month - 1 day) gives last day of prev month. 
+            # Then replace day=1 to get start.
+            last_day_prev = curr_month_start - timedelta(days=1)
+            prev_month_start = last_day_prev.replace(day=1)
+            
+            # 3. Get End of Previous Month Period
+            # Min of (Today's Day, Last Day of Prev Month)
+            target_day = min(now.day, last_day_prev.day)
+            prev_month_end = prev_month_start.replace(day=target_day)
+            
+            prev_start_str = prev_month_start.strftime("%Y-%m-%d")
+            prev_end_str = prev_month_end.strftime("%Y-%m-%d")
+            
+            prev_usage_val = session.query(func.sum(models.DailyUsage.energy_used))\
+                .filter(
+                    models.DailyUsage.project_id == project_id,
+                    models.DailyUsage.date >= prev_start_str,
+                    models.DailyUsage.date <= prev_end_str
+                ).scalar() or 0.0
+
+            compare_percent = 0.0
+            if prev_usage_val > 0:
+                diff = month_units - prev_usage_val
+                compare_percent = (diff / prev_usage_val) * 100.0
+                
+            # --- Target kWh ---
+            # Default to 500 if not configured. 
+            # ideally, we should fetch from models.BillingConfig if we add a column later.
+            target_kwh = 500.0 
+            
+            return {
+                "today_units": today_units,
+                "today_money": today_cost,
+                "month_units": month_units,
+                "month_money": month_cost,
+                "target_kwh": target_kwh,
+                "compare_percent": round(compare_percent, 1)
+            }
+        finally:
+            session.close()
+
+    def get_usage_history(self, project_id: str, days: int = 7, start: str = None, end: str = None):
+        """
+        Get aggregated usage/cost for the last N days (including today),
+        OR for a specific date range if start/end are provided (YYYY-MM-DD).
+        Returns list of { "date": "YYYY-MM-DD", "total_energy": X, "total_cost": Y }
+        """
+        repo, session = self._get_project_repo(project_id)
+        try:
+            if start and end:
+                start_str = start
+                end_str = end
+                start_date = datetime.strptime(start, "%Y-%m-%d")
+                end_date = datetime.strptime(end, "%Y-%m-%d")
+            else:
+                end_date = datetime.now()
+                start_date = end_date - timedelta(days=days-1)
+                start_str = start_date.strftime("%Y-%m-%d")
+                end_str = end_date.strftime("%Y-%m-%d")
+            
+            # Use 'session' directly or 'repo.db' (repo.db == session)
+            results = session.query(
+                models.DailyUsage.date,
+                func.sum(models.DailyUsage.energy_used).label("total_energy"),
+                func.sum(models.DailyUsage.cost).label("total_cost")
+            ).filter(
+                models.DailyUsage.project_id == project_id,
+                models.DailyUsage.date >= start_str,
+                models.DailyUsage.date <= end_str
+            ).group_by(models.DailyUsage.date).order_by(models.DailyUsage.date).all()
+            
+            # Fill missing days with 0
+            history_map = {r.date: r for r in results}
+            final_data = []
+            
+            current = start_date
+            while current <= end_date:
+                d_str = current.strftime("%Y-%m-%d")
+                row = history_map.get(d_str)
+                final_data.append({
+                    "date": d_str,
+                    "total_energy": row.total_energy if row else 0.0,
+                    "total_cost": row.total_cost if row else 0.0
+                })
+                current += timedelta(days=1)
+            
+            return final_data
+        finally:
+            if session:
+                session.close()

@@ -1,0 +1,61 @@
+EnergyLink – คู่มือใช้งานแบบย่อ (สำหรับเซิร์ฟเวอร์และเดสก์ท็อปแอพ)
+
+1) เตรียมเซิร์ฟเวอร์ (Backend)
+- ติดตั้ง Python 3 และไลบรารี: เปิด PowerShell ที่โฟลเดอร์โปรเจค แล้วรัน:
+- python -m pip install -r services/backend/requirements.txt
+- รันเซิร์ฟเวอร์:
+- python -m uvicorn services.backend.fastapi_app:app --host 0.0.0.0 --port 5000
+- ทดสอบการเข้าถึง:
+- เปิด http://<IP-Server>:5000/public/projects
+- เปิด http://<IP-Server>:5000/public/projects/<pid>/readings
+
+2) ตั้งค่า API ให้กับ Frontend (อัตโนมัติหรือกำหนดเอง)
+- ระบบอัตโนมัติ: frontend/config.js จะลองใช้ค่าเดิมใน localStorage, origin ปัจจุบัน, และ http://127.0.0.1:5000 โดยเลือกตัวที่ตอบได้จริง
+- กำหนดเองผ่าน URL:
+- เพิ่ม ?api=http://<IP-Server>:5000 ต่อท้าย URL หน้าแรก เช่น
+- http://<IP-Server>:5000/frontend/monitor/index.html?api=http://<IP-Server>:5000
+- ระบบจะจำค่าไว้ใน localStorage(API_BASE)
+
+3) เดสก์ท็อปแอพ (Electron)
+- แบบพกพา (ไม่ต้องติดตั้ง):
+- เปิดไฟล์: desktop/out_build2/win-unpacked/EnergyLink.exe
+- ตั้งค่าปลายทางก่อนเปิด (กรณีใช้เซิร์ฟเวอร์):
+- ใน PowerShell:
+- $env:ENERGYLINK_URL = 'http://<IP-Server>:5000/frontend/monitor/index.html'
+- $env:ENERGYLINK_API = 'http://<IP-Server>:5000'
+- แบบติดตั้ง:
+- รัน: desktop/out_build2/EnergyLink Setup 1.0.0.exe
+- ครั้งแรกถ้าหน้าไม่เชื่อมต่อ ให้เปิดด้วย ?api=http://<IP-Server>:5000 เพื่อบันทึกค่า
+
+4) การทดสอบโหลดข้อมูลในหน้า
+- หน้า Overview:
+- http://<IP-Server>:5000/frontend/monitor/index.html?pid=<pid>#overview
+- ตรวจใน DevTools → Network ว่ามีการเรียก:
+- GET /public/projects/<pid>/readings
+- หน้า User:
+- http://<IP-Server>:5000/frontend/user.html?pid=<pid>
+- ตรวจ:
+- GET /api/devices/status?project_id=<pid>
+
+5) ปัญหาที่พบบ่อยและการแก้
+- ข้อมูลไม่ขึ้น:
+- ตรวจว่า API_BASE ชี้ไป http://<IP-Server>:5000 (ดูใน Console) และ endpoints ตอบ 200
+- ตรวจ Firewall เปิดพอร์ต 5000 และเครื่องลูกค้าเข้าถึง <IP-Server> ได้
+- CORS:
+- เปิดหน้าเว็บผ่าน http://<IP-Server>:5000/frontend/... จะหลบปัญหา CORS ได้ดีที่สุด
+- หากเปิดผ่านโดเมนอื่น ให้ปรับ allow_origins ใน services/backend/fastapi_app.py
+- pid ผิด:
+- ตรวจที่ http://<IP-Server>:5000/public/projects ว่ามีโปรเจคและ active ถูกต้อง
+
+6) Agent สำหรับเก็บ/ส่งข้อมูลจากเครื่องลูกค้า (ถ้าต้องการ)
+- สคริปต์ติดตั้ง (กำหนด BACKEND/PROJECT และบัญชี):
+- deploy/install_user.bat  (รันในโหมดผู้ใช้ปัจจุบัน)
+- deploy/install_system.bat (รันเป็น SYSTEM ต้องใช้สิทธิ์ Admin)
+- ดู Log:
+- C:\Users\<user>\AppData\Local\EnergyLinkAgent\agent_local.log
+
+7) สรุปการใช้งานแบบมืออาชีพ
+- รัน Backend ที่เซิร์ฟเวอร์
+- เปิดหน้าเว็บ/เดสก์ท็อปผ่าน URL ของ Backend (หรือใช้ ?api= เพื่อบันทึกฐาน API)
+- ตรวจ endpoints หลักว่า 200 ก่อนใช้งานจริง
+- เลือกวิธีใช้งานที่ง่ายสุด: แบบพกพา (win-unpacked/EnergyLink.exe) หรือแบบติดตั้ง (EnergyLink Setup 1.0.0.exe)

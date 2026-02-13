@@ -1,3 +1,6 @@
 {
-  "price_per_unit": 5.0
+  "price_per_unit": 5,
+  "summary_day_template_id": "billing_summary.xlsx",
+  "summary_month_template_id": "converter_group.xlsx",
+  "receipt_template_id": "billing_summary.xlsx"
 }

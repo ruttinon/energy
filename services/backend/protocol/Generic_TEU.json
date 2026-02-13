@@ -1,0 +1,47 @@
+{
+  "name": "TEU (Transparent Ethernet UART) Driver",
+  "version": "1.0",
+  "type": "converter",
+  "description": "Transparent Ethernet UART bridge for raw frames over TCP/UDP. Suitable for custom serial-over-ethernet gateways.",
+  "protocols_supported": [
+    "teu",
+    "raw"
+  ],
+  "connection_types": [
+    "tcp_client",
+    "tcp_server",
+    "udp_client",
+    "udp_server"
+  ],
+  "network_settings": {
+    "default_host": "0.0.0.0",
+    "default_port": 10001,
+    "port_range": [1, 65535],
+    "timeout_default": 3.0,
+    "keepalive_default": true,
+    "max_connections": 50,
+    "retry_interval": 5.0,
+    "broadcast_enabled": true
+  },
+  "driver_behavior": {
+    "auto_reconnect": true,
+    "thread_safe": true,
+    "logging_level": "info",
+    "enable_statistics": true,
+    "realtime_mode": false
+  },
+  "examples": {
+    "tcp_client": {
+      "protocol": "teu",
+      "connection_type": "tcp_client",
+      "host": "192.168.1.50",
+      "port": 10001
+    },
+    "udp_client": {
+      "protocol": "teu",
+      "connection_type": "udp_client",
+      "host": "192.168.1.50",
+      "port": 10001
+    }
+  }
+}

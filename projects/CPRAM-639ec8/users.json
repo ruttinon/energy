@@ -1,8 +1,11 @@
 {
   "user": {
     "username": "user",
-    "salt": "52c6954c8b31a83d",
-    "password_hash": "e973855fbd405d6fc260160653030e56411fbfc290a8931de75818d8c4b7b3b1",
-    "role": "user"
+    "salt": "fe638334e4c11e3c",
+    "password_hash": "e39d91f3676e51595b10b1f5b19290bff8f40669bed9d3ad2e2e54313f41ac78",
+    "role": "user",
+    "display_name": "prom",
+    "phone": "0602626262",
+    "email": "energylinksacada@gmail.com"
   }
 }

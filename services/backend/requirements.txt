@@ -7,3 +7,9 @@ qrcode[pil]
 requests
 paho-mqtt
 openpyxl
+python-multipart
+pandas
+jinja2
+omise
+line-bot-sdk
+schedule

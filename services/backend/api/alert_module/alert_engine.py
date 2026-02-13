@@ -1,652 +1,506 @@
-import json
 import os
+import json
+import time
 from datetime import datetime, timedelta
-from .rules_manager import load_rules
-from .event_rules_manager import load_event_rules
-from .config_manager import load_config
-from .alert_manager import add_alert
+from typing import Dict, List, Optional, Any
 
-# 🔥 Database functions
+# Internal imports
+from services.backend.api.alert_module.rules_manager import load_rules
+from services.backend.api.alert_module.alert_manager import add_alert, get_alerts
+from services.backend.api.billing.database import get_project_db_path
+from services.backend.api.alert_module.event_engine import log_event as save_event_log
+from services.backend.shared_state import READINGS, LAST_SEEN
 try:
-    from utils.database_manager import save_alert_log, save_event_log, save_sensor_reading
-    DB_AVAILABLE = True
+    from services.backend.api.email.email_service import send_email as _send_email
 except ImportError:
-    DB_AVAILABLE = False
-    # print("⚠️ Database not available - using JSON only")
+    _send_email = None
 
-# 🔥 XLSX Storage
-try:
-    from services.backend.api.xlsx_storage import save_alert, save_reading
-except ImportError:
-    save_alert = None
-    save_reading = None
-    # print("⚠️ XLSX Storage not available")
+_LINE_ALERT_MANAGER = None
 
-# ===========================================
-# PATH
-# ===========================================
-THIS_FILE = os.path.abspath(__file__)
-THIS_DIR = os.path.dirname(THIS_FILE)
-PROJECT_ROOT = os.path.abspath(os.path.join(THIS_DIR, "..", "..")) # services/backend
-DATA_DIR = os.path.join(PROJECT_ROOT, "data") # services/backend/data ?? No, probably project root data if standalone
+# ============================================================
+# STARTUP GRACE PERIOD
+# หลัง server เริ่ม ไม่ส่งแจ้งเตือนช่วงนี้
+# เพราะตอนเริ่มจะยังไม่มีข้อมูลครบ ต้องรอ poller เก็บ data ก่อน
+# ============================================================
+_ENGINE_START_TIME = time.time()
+_STARTUP_GRACE_SECONDS = 180  # 3 นาที
 
-PROJECTS_ROOT = os.path.abspath(os.path.join(THIS_DIR, "..", "..", "..", "..", "projects"))
+# Projects Root
+PROJECTS_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "projects"))
 
+def _get_project_dir(project_id: str) -> str:
+    return os.path.join(PROJECTS_ROOT, project_id)
 
-CONVERTORS_PATH = os.path.join(DATA_DIR, "convertors.json")
-LOG_PATH = os.path.join(DATA_DIR, "logs", "alert_logs.json")
+def _get_alert_dir(project_id: str) -> str:
+    return os.path.join(_get_project_dir(project_id), "alert")
 
-os.makedirs(os.path.dirname(LOG_PATH), exist_ok=True)
+def _get_active_alerts_path(project_id: str) -> str:
+    return os.path.join(_get_alert_dir(project_id), "active_alerts.json")
 
-# 🔥 TIMEOUT สำหรับการตรวจสอบ OFFLINE (วินาที)
-OFFLINE_TIMEOUT = 60  # 60 วินาที ถ้าไม่มีข้อมูลจึงจะถือว่า OFFLINE
+def _get_alert_logs_path(project_id: str) -> str:
+    return os.path.join(_get_alert_dir(project_id), "alert_logs.json")
 
-def _get_status_path(project_id):
-    if not project_id:
-        return os.path.join(PROJECT_ROOT, "utils", "alert_module", "device_status.json")
-    return os.path.join(PROJECTS_ROOT, project_id, "alert", "device_status.json")
+def _get_device_status_path(project_id: str) -> str:
+    return os.path.join(_get_alert_dir(project_id), "device_status.json")
 
-def _get_alert_logs_path(project_id):
-    """Get path for alert logs JSON file"""
-    if not project_id:
-        return LOG_PATH
-    return os.path.join(PROJECTS_ROOT, project_id, "alert", "alert_logs.json")
+def _is_in_grace_period() -> bool:
+    return (time.time() - _ENGINE_START_TIME) < _STARTUP_GRACE_SECONDS
 
-# ===========================================
-# DEVICE STATUS
-# ===========================================
-def load_status(project_id=None):
-    path = _get_status_path(project_id)
-    if not os.path.exists(path):
-        return {}
-    try:
-        return json.load(open(path, "r", encoding="utf-8"))
-    except:
-        return {}
-
-def save_status(data, project_id=None):
-    path = _get_status_path(project_id)
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-
-# ===========================================
-# ALERT LOGS MANAGEMENT
-# ===========================================
-def load_alert_logs(project_id=None):
-    """Load alert logs from JSON file"""
+def load_alert_logs(project_id: str, limit: int = 100) -> List[Dict]:
     path = _get_alert_logs_path(project_id)
     if not os.path.exists(path):
         return []
     try:
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, 'r', encoding='utf-8') as f:
             logs = json.load(f)
-        # Keep only last 100 alerts
-        return logs[-100:] if len(logs) > 100 else logs
-    except:
+        logs.sort(key=lambda x: x.get('time', ''), reverse=True)
+        return logs[:limit]
+    except Exception as e:
+        print(f"Error loading alert logs: {e}")
         return []
 
-def save_alert_logs(alerts, project_id=None):
-    """Save alert logs to JSON file"""
+def save_alert_logs(logs: list, project_id: str):
+    """Save alert logs to JSON file (used by clear alerts endpoint)"""
     path = _get_alert_logs_path(project_id)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     try:
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(alerts, f, ensure_ascii=False, indent=2)
+        with open(path, 'w', encoding='utf-8') as f:
+            json.dump(logs, f, indent=2, ensure_ascii=False)
     except Exception as e:
-        print(f"[Alert Engine] ERROR saving alert logs: {e}")
+        print(f"Error saving alert logs: {e}")
 
-def add_alert_to_logs(alert, project_id=None):
-    """Add new alert to logs (both JSON and Excel)"""
+def load_status(project_id: str) -> Dict:
+    path = _get_device_status_path(project_id)
+    if not os.path.exists(path):
+        return {}
     try:
-        # Add to JSON logs
-        logs = load_alert_logs(project_id)
-        logs.append(alert)
-        save_alert_logs(logs, project_id)
-        
-        # Save to Excel if available
-        if save_alert and project_id:
-            try:
-                save_alert(
-                    project_id=project_id,
-                    device_id=alert.get('device_id', ''),
-                    device_name=alert.get('device_name', ''),
-                    alert_type=alert.get('severity', 'info'),
-                    message=alert.get('message', '')
-                )
-                print(f"[Alert Engine] ✅ Saved to Excel: {alert.get('device_name')} - {alert.get('message')}")
-            except Exception as e:
-                print(f"[Alert Engine] ⚠️ Excel save failed: {e}")
-                
+        with open(path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except:
+        return {}
+
+def save_status(project_id: str, status: Dict):
+    path = _get_device_status_path(project_id)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    try:
+        with open(path, 'w', encoding='utf-8') as f:
+            json.dump(status, f, indent=2, ensure_ascii=False)
     except Exception as e:
-        print(f"[Alert Engine] ERROR adding alert: {e}")
+        print(f"Error saving status: {e}")
 
-# ===========================================
-# ACTIVE ALERTS STATE (For Spam Prevention)
-# ===========================================
-def _get_active_alerts_path(project_id):
-    if not project_id:
-        return os.path.join(DATA_DIR, "logs", "active_alerts.json")
-    return os.path.join(PROJECTS_ROOT, project_id, "alert", "active_alerts.json")
-
-def load_active_alerts(project_id=None):
-    """Load currently active alerts map: {device_id_rule_id: timestamp}"""
+def load_active_alerts(project_id: str) -> Dict:
     path = _get_active_alerts_path(project_id)
     if not os.path.exists(path):
         return {}
     try:
-        return json.load(open(path, "r", encoding="utf-8"))
+        with open(path, 'r') as f:
+            return json.load(f)
     except:
         return {}
 
-def save_active_alerts(active_map, project_id=None):
+def save_active_alerts(active_alerts: Dict, project_id: str):
     path = _get_active_alerts_path(project_id)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     try:
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(active_map, f, ensure_ascii=False, indent=2)
-    except Exception as e:
-        print(f"[Alert Engine] Error saving active alerts: {e}")
-
-# ===========================================
-# MAP DEVICE → CONVERTOR
-# ===========================================
-def map_device_to_convertor(device_id, project_id=None):
-    try:
-        # 1. Try Project Config (Priority)
-        if project_id:
-            cfg_path = os.path.join(PROJECTS_ROOT, project_id, "ConfigDevice.json")
-            if os.path.exists(cfg_path):
-                with open(cfg_path, 'r', encoding='utf-8') as f:
-                    cfg = json.load(f)
-                
-                for conv in cfg.get('converters', []):
-                    # Check devices list
-                    for d in (conv.get('devices') or []):
-                        if str(d.get('id')) == str(device_id):
-                             return {
-                                "convertor_id": conv.get("id"),
-                                "convertor_name": conv.get("name"),
-                                "device_name": d.get("name", device_id)
-                            }
-
-        # 2. Try Global Convertors (Fallback)
-        if os.path.exists(CONVERTORS_PATH):
-            with open(CONVERTORS_PATH, "r", encoding="utf-8") as f:
-                cv = json.load(f)
-
-            for conv_id, conv_data in cv.items():
-                devices = conv_data.get("devices", {})
-                if device_id in devices:
-                    return {
-                        "convertor_id": conv_id,
-                        "convertor_name": conv_data.get("name", conv_id),
-                        "device_name": devices[device_id].get("name", device_id)
-                    }
-
-    except Exception as e:
-        print("[Alert Engine] map_device error:", e)
-
-    return {
-        "convertor_id": None,
-        "convertor_name": None,
-        "device_name": device_id
-    }
-
-# ===========================================
-# COMPARE ENGINE
-# ===========================================
-def compare(value, operator, threshold, threshold2=None):
-    try:
-        if operator == ">": return value > threshold
-        if operator == "<": return value < threshold
-        if operator == ">=": return value >= threshold
-        if operator == "<=": return value <= threshold
-        if operator == "==": return value == threshold
-        if operator == "!=": return value != threshold
-        if operator == "between" and threshold2 is not None:
-            return threshold <= value <= threshold2
-        if operator == "out_of_range" and threshold2 is not None:
-            return not (threshold <= value <= threshold2)
+        with open(path, 'w') as f:
+            json.dump(active_alerts, f, indent=2)
     except:
+        pass
+
+def _get_device_online_from_readings(project_id: str, dev_id: str) -> bool:
+    """
+    ตรวจสอบสถานะ Online โดยยึดตามตรรกะเดียวกับหน้า Web (ใช้ LAST_SEEN เป็นหลัก)
+    - ถ้ามี LAST_SEEN: online = (now - last_seen) <= 300 วินาที
+    - ถ้าไม่มี LAST_SEEN: พึ่งพา readings['online'] หรือ timestamp ใน readings
+    """
+    try:
+        now_ts = time.time()
+        last_seen_map = LAST_SEEN.get(project_id, {}) or {}
+        last_seen_val = last_seen_map.get(str(dev_id))
+        if last_seen_val is None:
+            last_seen_val = last_seen_map.get(dev_id)
+        if last_seen_val is not None:
+            try:
+                return (now_ts - float(last_seen_val)) <= 300
+            except Exception:
+                pass
+    except Exception:
+        pass
+    
+    readings = READINGS.get(project_id, {}) or {}
+    dev_data = readings.get(str(dev_id)) or readings.get(dev_id) or {}
+    
+    if dev_data.get('online') is True:
+        return True
+    if dev_data.get('online') is False:
         return False
+    
+    ts = dev_data.get('timestamp')
+    if ts:
+        try:
+            if isinstance(ts, str):
+                last_seen_dt = datetime.fromisoformat(ts.replace(' ', 'T'))
+            else:
+                last_seen_dt = ts
+            return (datetime.now() - last_seen_dt).total_seconds() <= 300
+        except Exception:
+            return False
     return False
 
-# ===========================================
-# APPLY EVENT RULES
-# ===========================================
-def apply_event_rules(sensor, device_id):
-    rules = load_event_rules()
-    for r in rules:
-        m = r["metric"]
-        if m not in sensor:
-            continue
 
-        try:
-            value = float(sensor[m])
-            th = float(r["threshold"])
-        except:
-            continue
+# ============================================================
+# DEBOUNCE / CONFIRMATION
+# ============================================================
+_offline_confirm_counters: Dict[str, int] = {}  # key: "project_device" -> count
+_OFFLINE_CONFIRM_REQUIRED = 2  # ต้องตรวจเจอ Offline 2 ครั้ง (60 วิ) ถึงจะแจ้ง
+_MIN_OFFLINE_SECONDS = 30       # ต้อง Offline อย่างน้อย 30 วิ ก่อนส่งแจ้งเตือน (กัน Flap)
+_OFFLINE_COOLDOWN_SECONDS = 600 # กันสแปม: แจ้ง Offline ไม่เกินทุก 10 นาที/อุปกรณ์
+_RECOVERY_COOLDOWN_SECONDS = 300 # กันสแปม: แจ้ง Recovery ไม่เกินทุก 5 นาที/อุปกรณ์
 
-        ok = compare(value, r["operator"], th, r.get("threshold2"))
-
-        if ok and DB_AVAILABLE:
-            try:
-                save_event_log(
-                    event_name=r["event_name"],
-                    event_type="custom",
-                    device_id=device_id,
-                    user=None,
-                    details=r.get("message", "")
-                )
-            except Exception as e:
-                print(f"⚠️ Event DB log error: {e}")
-
-# =====================================================
-# 🔧 DEBUGGING & FIXES FOR ALERT ENGINE
-# =====================================================
-
-# วิธีตรวจสอบว่า Alert Engine ทำงานหรือไม่
-# เพิ่มโค้ดนี้ใน alert_engine.py
-
-def check_alerts(sensor_data: dict, device_id: str = None, project_id: str = None, dry_run: bool = False):
+def check_offline_devices(project_id: str):
     """
-    Enhanced version with debugging output
+    ตรวจสอบสถานะ online/offline ของอุปกรณ์
+    
+    STATE MACHINE + CONFIRMATION:
+    1. Online -> Offline: ต้องเจอ 2 ครั้งติดกันถึงจะแจ้ง (ลด Noise)
+    2. Offline -> Online: แจ้งทันที (Responsive)
     """
-    
-    # 🔍 DEBUG: Print input data
-    print(f"\n{'='*60}")
-    print(f"[Alert Engine] CHECK ALERTS CALLED")
-    print(f"{'='*60}")
-    print(f"Project ID: {project_id}")
-    print(f"Device ID: {device_id}")
-    print(f"Dry Run: {dry_run}")
-    print(f"Sensor Data: {sensor_data}")
-    print(f"{'='*60}\n")
-    
-    alerts = []
-    rules = load_rules(project_id)
-    
-    # 🔍 DEBUG: Print loaded rules
-    print(f"[Alert Engine] Loaded {len(rules)} rules:")
-    for r in rules:
-        print(f"  - Rule #{r.get('id')}: {r.get('rule_name')}")
-        print(f"    Metric: {r.get('metric')}")
-        print(f"    Condition: {r.get('operator')} {r.get('threshold')}")
-        print(f"    Active: {r.get('is_active', True)}")
-    
-    if not rules:
-        print("⚠️  WARNING: No rules found! Please create rules first.")
-        return []
-    
-    info = map_device_to_convertor(device_id, project_id)
-    
-    # ... rest of the function continues ...
-    
-    if not dry_run:
-        # -------------------------------------------------------------
-        # 🔥 DEVICE ONLINE / OFFLINE MONITOR
-        # -------------------------------------------------------------
-        status = load_status(project_id)
-        now = datetime.now()
-        now_str = now.strftime("%Y-%m-%d %H:%M:%S")
+    if not project_id:
+        return
 
-        device_info = status.get(device_id, {
-            "online": False,
+    status_map = load_status(project_id)
+    
+    config_path = os.path.join(_get_project_dir(project_id), "ConfigDevice.json")
+    if not os.path.exists(config_path):
+        return
+
+    try:
+        with open(config_path, 'r', encoding='utf-8') as f:
+            config = json.load(f)
+    except:
+        return
+
+    updated = False
+    now = datetime.now()
+    in_grace = _is_in_grace_period()
+    
+    # Flatten expected devices from config
+    expected_devices = []
+    for conv in config.get('converters', []):
+        for dev in conv.get('devices', []):
+            expected_devices.append(str(dev.get('id')))
+
+    readings = READINGS.get(project_id, {})
+    all_device_ids = set(expected_devices)
+    
+    for dev_id in all_device_ids:
+        # Get existing status
+        dev_status = status_map.get(dev_id, {
+            "online": False, 
             "last_seen": None,
             "offline_since": None,
-            "offline_reason": None,
-            "online_reason": None,
-            "ip": None
+            "offline_notified": False,
+            "_initialized": False,
+            "_first_offline_detected_ts": None,
+            "_last_offline_notify_ts": None,
+            "_last_recovery_notify_ts": None
         })
         
-        # 🔌 ถ้าเดิมเป็น OFFLINE และตอนนี้ได้ข้อมูลใหม่ → เปลี่ยนเป็น ONLINE
-        if not device_info["online"]:
-            # ... (Recovery logic omitted for brevity, it's fine) ...
-             # เพิ่ม Alert แจ้งว่ากลับมาแล้ว, etc.
-             pass
+        # ======== DETERMINE CURRENT ONLINE STATUS ========
+        current_online = _get_device_online_from_readings(project_id, dev_id)
+        
+        # Get names for notification
+        dev_name, conv_name = _get_device_info(project_id, dev_id)
+        display_name = dev_name if dev_name else f"Device {dev_id}"
+        
+        # Get last_seen for display
+        dev_data = readings.get(dev_id) or readings.get(str(dev_id))
+        last_seen_str = dev_data.get('timestamp') if dev_data else None
+        
+        prev_online = dev_status.get('online', False)
+        was_initialized = dev_status.get('_initialized', False)
+        was_notified_offline = dev_status.get('offline_notified', False)
+        confirm_key = f"{project_id}_{dev_id}"
+        
+        # ==============================
+        # CASE 1: ครั้งแรกเจออุปกรณ์
+        # ==============================
+        if not was_initialized:
+            dev_status['online'] = current_online
+            dev_status['_initialized'] = True
+            dev_status['last_seen'] = last_seen_str
+            if not current_online:
+                dev_status['offline_since'] = now.strftime("%Y-%m-%d %H:%M:%S")
+                dev_status['offline_notified'] = False
+                dev_status['_first_offline_detected_ts'] = now.timestamp()
+            else:
+                dev_status['offline_since'] = None
+                dev_status['offline_notified'] = False
+                dev_status['_first_offline_detected_ts'] = None
+            _offline_confirm_counters[confirm_key] = 0
+            # print(f"[ALERT INIT] {display_name}: {'ONLINE' if current_online else 'OFFLINE'}")
+        
+        # ==============================
+        # CASE 2: สถานะปัจจุบัน = ONLINE
+        # ==============================
+        elif current_online:
+            _offline_confirm_counters[confirm_key] = 0 # Reset counter
+            
+            if not prev_online:
+                # 🟢 Offline -> Online (Recovery)
+                dev_status['online'] = True
+                dev_status['last_seen'] = last_seen_str
+                dev_status['offline_since'] = None
+                
+                if was_notified_offline and not in_grace:
+                    last_rec_ts = dev_status.get('_last_recovery_notify_ts')
+                    if not last_rec_ts or (now.timestamp() - float(last_rec_ts)) >= _RECOVERY_COOLDOWN_SECONDS:
+                        print(f"[ALERT] 🟢 {display_name}: OFFLINE -> ONLINE")
+                        log_alert(project_id, dev_id, "Device Recovery", f"อุปกรณ์ {display_name} กลับมาออนไลน์")
+                        send_notifications(project_id, f"อุปกรณ์ {display_name} [ID:{dev_id}] กลับมาออนไลน์แล้ว", dev_id, "RECOVERY")
+                        resolve_alerts_for_device(project_id, dev_id, "Device Offline")
+                        dev_status['_last_recovery_notify_ts'] = now.timestamp()
+                
+                dev_status['offline_notified'] = False
+                dev_status['_first_offline_detected_ts'] = None
+            else:
+                # Still Online
+                if last_seen_str:
+                    dev_status['last_seen'] = last_seen_str
+        
+        # ==============================
+        # CASE 3: สถานะปัจจุบัน = OFFLINE
+        # ==============================
+        else:
+            if prev_online:
+                # 🔴 Online -> Offline (Start Confirming)
+                count = _offline_confirm_counters.get(confirm_key, 0) + 1
+                _offline_confirm_counters[confirm_key] = count
+                
+                # Mark first offline detection time
+                if not dev_status.get('_first_offline_detected_ts'):
+                    dev_status['_first_offline_detected_ts'] = now.timestamp()
+                
+                elapsed_offline = now.timestamp() - float(dev_status.get('_first_offline_detected_ts') or now.timestamp())
+                
+                if count >= _OFFLINE_CONFIRM_REQUIRED and elapsed_offline >= _MIN_OFFLINE_SECONDS:
+                    # ✅ CONFIRMED OFFLINE
+                    dev_status['online'] = False
+                    dev_status['offline_since'] = now.strftime("%Y-%m-%d %H:%M:%S")
+                    
+                    # Cooldown check (anti-spam)
+                    last_off_ts = dev_status.get('_last_offline_notify_ts')
+                    cooldown_ok = (not last_off_ts) or ((now.timestamp() - float(last_off_ts)) >= _OFFLINE_COOLDOWN_SECONDS)
+                    
+                    if not in_grace and not was_notified_offline and cooldown_ok:
+                        print(f"[ALERT] 🔴 {display_name}: ONLINE -> OFFLINE (Confirmed)")
+                        log_alert(project_id, dev_id, "Device Offline", f"อุปกรณ์ {display_name} ขาดการติดต่อ")
+                        send_notifications(project_id, f"🚨 อุปกรณ์ {display_name} [ID:{dev_id}] ขาดการติดต่อ!", dev_id, "OFFLINE")
+                        dev_status['offline_notified'] = True
+                        dev_status['_last_offline_notify_ts'] = now.timestamp()
+                else:
+                    pass
+            else:
+                # Still Offline
+                pass
+        
+        status_map[dev_id] = dev_status
+        updated = True
 
-        # Always update status to ONLINE when receiving data
-        device_info["online"] = True
-        device_info["last_seen"] = now_str
-        status[device_id] = device_info
-        save_status(status, project_id)
+    if updated:
+        save_status(project_id, status_map)
 
-        # -------------------------------------------------------------
-        # 🔥บันทึก sensor data ลง Excel (RESTORED)
-        # -------------------------------------------------------------
-        if save_reading and project_id and device_id:
-            try:
-                device_name = info.get('device_name', device_id)
-                for key, value in sensor_data.items():
-                    try:
-                        # Skip strictly non-numeric values if desired, or try convert
-                        float_value = float(value)
-                        save_reading(
-                            project_id=project_id,
-                            device_id=device_id,
-                            device_name=device_name,
-                            key=key,
-                            value=float_value,
-                            unit=""
-                        )
-                    except (ValueError, TypeError):
-                        continue
-            except Exception as e:
-                print(f"[Alert Engine] ⚠️ Excel reading save error: {e}")
-
-        # -------------------------------------------------------------
-        # 🔥 Log sensor reading to DB (RESTORED)
-        # -------------------------------------------------------------
-        if DB_AVAILABLE and device_id:
-            try:
-                save_sensor_reading(
-                    device_id=device_id,
-                    sensor_data=sensor_data,
-                    convertor_id=info.get("convertor_id")
-                )
-            except Exception as e:
-                 # print(f"⚠️ Sensor DB log error: {e}")
-                 pass
-
-        # -------------------------------------------------------------
-        # 🔥 Apply event rules
-        # -------------------------------------------------------------
-        cfg = load_config()
-        if cfg.get("rule_mode") in ["combined", "separate"]:
-            apply_event_rules(sensor_data, device_id)
-
-
-    # Load active alerts state
-    active_alerts = {}
-    if not dry_run:
-        active_alerts = load_active_alerts(project_id)
-        print(f"\n[Alert Engine] Active alerts state: {active_alerts}")
+def check_alerts(values: dict, device_id: str, project_id: str, dry_run: bool = False):
+    """Check rules against current readings"""
+    if not project_id: return []
     
-    dirty_state = False
+    rules = load_rules(project_id)
+    active_alerts = load_active_alerts(project_id)
+    readings = READINGS.get(project_id, {})
+    
+    updated = False
     
     for rule in rules:
-        if not rule.get("is_active", True):
-            print(f"[Alert Engine] ⏭️  Skipping disabled rule: {rule.get('rule_name')}")
-            continue
-
-        metric = rule.get("metric")
-        if not metric or metric not in sensor_data:
-            print(f"[Alert Engine] ⏭️  Skipping rule {rule.get('rule_name')}: metric '{metric}' not in sensor data")
-            print(f"              Available keys: {list(sensor_data.keys())}")
-            continue
-
+        if not rule.get('enabled', True): continue
+        
         try:
-            value = float(sensor_data[metric])
-            threshold = float(rule.get("threshold"))
-        except Exception as e:
-            print(f"[Alert Engine] ❌ Value/Threshold conversion error for {metric}: {e}")
-            continue
-
-        threshold2 = rule.get("threshold2")
-        if threshold2 not in [None, ""]:
-            try: 
-                threshold2 = float(threshold2)
-            except: 
-                threshold2 = None
-        else:
-            threshold2 = None
-
-        # Check condition
-        is_triggered = compare(value, rule.get("operator"), threshold, threshold2)
-        
-        # 🔍 DEBUG: Print comparison result
-        print(f"\n[Alert Engine] 🔎 Rule Check:")
-        print(f"  Rule: {rule.get('rule_name')}")
-        print(f"  Condition: {metric} = {value} {rule.get('operator')} {threshold}")
-        print(f"  Result: {'🔴 TRIGGERED' if is_triggered else '🟢 OK'}")
-        
-        rule_id = str(rule.get("id"))
-        unique_key = f"{device_id}_{rule_id}"
-        
-        # STATEFUL LOGIC
-        if is_triggered:
-            # If ALREADY active -> Do nothing (Spam Prevention)
-            if unique_key in active_alerts:
-                print(f"  ⏭️  Alert already active, skipping (spam prevention)")
-                continue
-                
-            # If NEW alert -> Trigger
-            alert = {
-                "rule_id": rule.get("id"),
-                "rule_name": rule.get("rule_name"),
-                "convertor_id": info.get("convertor_id"),
-                "convertor_name": info.get("convertor_name"),
-                "device_id": device_id,
-                "device_name": info.get("device_name"),
-                "metric": metric,
-                "value": value,
-                "threshold": threshold,
-                "threshold2": threshold2,
-                "operator": rule.get("operator"),
-                "severity": rule.get("severity", "info"),
-                "message": rule.get("message") or f"{metric} {rule.get('operator')} {threshold}",
-                "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "event": "ALERT STARTED"
-            }
-            alerts.append(alert)
+            dev_id = str(rule.get('device_id'))
+            param = rule.get('parameter')
+            operator = rule.get('operator')
+            threshold = float(rule.get('threshold', 0))
             
-            if not dry_run:
-                print(f"  🚨 NEW ALERT TRIGGERED: {alert['message']}")
-                add_alert_to_logs(alert, project_id)
-                active_alerts[unique_key] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                dirty_state = True
-                
-                # DB / Event hooks
-                if DB_AVAILABLE:
-                    try: 
-                        save_alert_log(alert)
-                    except: 
-                        pass
-                    try:
-                        save_event_log("Alarm Triggered", "alarm", device_id, None, 
-                                     f"{alert['device_name']} - {alert['rule_name']}")
-                    except: 
-                        pass
-
-        else:
-            # Condition NOT met (Normal)
-            # Check if it WAS active -> Recovery
-            if unique_key in active_alerts:
-                # Trigger Resolution
-                resolve_msg = f"สถานะกลับสู่ปกติ ({metric} = {value})"
-                alert = {
-                    "rule_id": rule.get("id"),
-                    "rule_name": rule.get("rule_name"),
-                    "convertor_id": info.get("convertor_id"),
-                    "convertor_name": info.get("convertor_name"),
-                    "device_id": device_id,
-                    "device_name": info.get("device_name"),
-                    "metric": metric,
-                    "value": value,
-                    "threshold": threshold,
-                    "threshold2": threshold2,
-                    "operator": rule.get("operator"),
-                    "severity": "info",
-                    "message": resolve_msg,
-                    "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                    "event": "ALERT RESOLVED"
-                }
-                alerts.append(alert)
-                
-                if not dry_run:
-                    print(f"  ✅ ALERT RESOLVED: {rule.get('rule_name')}")
-                    add_alert_to_logs(alert, project_id)
-                    del active_alerts[unique_key]
-                    dirty_state = True
+            if dev_id in readings:
+                val = readings[dev_id].get(param)
+                if val is not None:
+                    triggered = False
+                    if operator == '>' and val > threshold: triggered = True
+                    elif operator == '<' and val < threshold: triggered = True
+                    elif operator == '>=' and val >= threshold: triggered = True
+                    elif operator == '<=' and val <= threshold: triggered = True
+                    elif operator == '==' and val == threshold: triggered = True
                     
-                    if DB_AVAILABLE:
-                        try:
-                            save_event_log("Alarm Resolved", "alarm", device_id, None, 
-                                         f"{alert['device_name']} - {alert['rule_name']} resolved")
-                        except: 
-                            pass
-
-    # Save state if changed
-    if not dry_run and dirty_state:
+                    rule_id = rule.get('id', 'unknown')
+                    rule_key = f"{rule_id}_{dev_id}"
+                    
+                    if triggered:
+                        if rule_key not in active_alerts:
+                            msg = f"{rule.get('name')} triggered: {val} {operator} {threshold}"
+                            active_alerts[rule_key] = {
+                                "start_time": datetime.now().isoformat(),
+                                "value": val,
+                                "message": msg,
+                                "rule_id": rule_id
+                            }
+                            updated = True
+                            if not dry_run and not _is_in_grace_period():
+                                log_alert(project_id, dev_id, "Rule Triggered", msg)
+                                send_notifications(project_id, msg, dev_id, val)
+                    else:
+                        if rule_key in active_alerts:
+                            del active_alerts[rule_key]
+                            updated = True
+                            if not dry_run and not _is_in_grace_period():
+                                msg = f"{rule.get('name')} returned to normal: {val}"
+                                log_alert(project_id, dev_id, "Rule Recovery", msg)
+                                send_notifications(project_id, msg, dev_id, "NORMAL")
+                                resolve_alerts_for_device(project_id, dev_id, "Rule Triggered")
+        except:
+            pass
+            
+    if updated and not dry_run:
         save_active_alerts(active_alerts, project_id)
-        print(f"\n[Alert Engine] ✅ Saved active alerts state")
+    
+    return []
 
-    print(f"\n[Alert Engine] 📊 Summary: {len(alerts)} alerts generated")
-    print(f"{'='*60}\n")
-    
-    return alerts
-
-
-# =====================================================
-# 🔧 QUICK DIAGNOSTIC FUNCTION
-# =====================================================
-
-def diagnose_alert_system(project_id: str = None):
-    """
-    Run complete diagnostic of alert system
-    """
-    print("\n" + "="*70)
-    print("🔍 ALERT SYSTEM DIAGNOSTIC")
-    print("="*70)
-    
-    # 1. Check Rules
-    rules = load_rules(project_id)
-    print(f"\n1️⃣  RULES CHECK:")
-    print(f"   Total rules: {len(rules)}")
-    for r in rules:
-        print(f"   - #{r.get('id')}: {r.get('rule_name')}")
-        print(f"     Metric: {r.get('metric')}")
-        print(f"     Condition: {r.get('operator')} {r.get('threshold')}")
-        print(f"     Active: {r.get('is_active', True)}")
-    
-    # 2. Check Active Alerts
-    active = load_active_alerts(project_id)
-    print(f"\n2️⃣  ACTIVE ALERTS STATE:")
-    print(f"   Total active: {len(active)}")
-    for key, ts in active.items():
-        print(f"   - {key}: since {ts}")
-    
-    # 3. Check Recent Logs
-    logs = load_alert_logs(project_id)
-    print(f"\n3️⃣  RECENT ALERT LOGS:")
-    print(f"   Total logs: {len(logs)}")
-    recent = logs[-5:] if len(logs) > 5 else logs
-    for log in recent:
-        print(f"   - [{log.get('time')}] {log.get('device_name')}: {log.get('message')}")
-        print(f"     Event: {log.get('event')}, Severity: {log.get('severity')}")
-    
-    # 4. Check Current Readings
-    from services.backend.shared_state import READINGS
-    readings = READINGS.get(project_id, {})
-    print(f"\n4️⃣  CURRENT READINGS:")
-    print(f"   Total devices: {len(readings)}")
-    for dev_id, rec in readings.items():
-        print(f"   - Device {dev_id} ({rec.get('device_name')})")
-        print(f"     Online: {rec.get('online')}")
-        print(f"     Last update: {rec.get('timestamp')}")
-        print(f"     Values: {list(rec.get('values', {}).keys())}")
-    
-    print("\n" + "="*70)
-    print("✅ DIAGNOSTIC COMPLETE")
-    print("="*70 + "\n")
-
-
-# =====================================================
-# 🔧 MANUAL TEST FUNCTION
-# =====================================================
-
-def test_alert_manually(project_id: str, device_id: str, test_data: dict):
-    """
-    Manually test alert with sample data
-    
-    Example:
-        test_alert_manually(
-            "my-project-123",
-            "device-001",
-            {"voltage": 250, "current": 15.5, "temperature": 85}
-        )
-    """
-    print("\n" + "="*70)
-    print("🧪 MANUAL ALERT TEST")
-    print("="*70)
-    
-    print(f"\nProject: {project_id}")
-    print(f"Device: {device_id}")
-    print(f"Test Data: {test_data}")
-    
-    # Run check_alerts
-    alerts = check_alerts(test_data, device_id, project_id, dry_run=False)
-    
-    print(f"\n📊 Result: {len(alerts)} alerts generated")
-    for alert in alerts:
-        print(f"\n  Alert: {alert.get('rule_name')}")
-        print(f"  Event: {alert.get('event')}")
-        print(f"  Message: {alert.get('message')}")
-        print(f"  Severity: {alert.get('severity')}")
-    
-    print("\n" + "="*70 + "\n")
-    
-    return alerts
-# ===========================================
-# BACKGROUND MONITOR (Check for offline devices)
-# ===========================================
-def check_offline_devices(project_id=None):
-    """
-    Check for devices that haven't sent data in OFFLINE_TIMEOUT seconds
-    This should be called periodically (e.g., every 30 seconds)
-    """
+def resolve_alerts_for_device(project_id: str, device_id: str, alert_type: str):
+    """Mark all active alerts of this type as resolved in DB"""
     try:
-        status = load_status(project_id)
-        now = datetime.now()
-        
-        for device_id, device_info in status.items():
-            if not device_info.get("last_seen"):
-                continue
-                
-            try:
-                last_seen = datetime.strptime(device_info["last_seen"], "%Y-%m-%d %H:%M:%S")
-                seconds_since = (now - last_seen).total_seconds()
-                
-                # If device was ONLINE but now exceeded timeout → mark as OFFLINE
-                if device_info.get("online") and seconds_since > OFFLINE_TIMEOUT:
-                    device_info["online"] = False
-                    device_info["offline_since"] = now.strftime("%Y-%m-%d %H:%M:%S")
-                    device_info["offline_reason"] = f"ไม่ได้รับข้อมูลเกิน {OFFLINE_TIMEOUT} วินาที (Timeout)"
-                    
-                    # Get device info
-                    info = map_device_to_convertor(device_id, project_id)
-                    
-                    # Create offline alert
-                    offline_alert = {
-                        "rule_id": None,
-                        "rule_name": "Device Offline",
-                        "convertor_id": info.get("convertor_id"),
-                        "convertor_name": info.get("convertor_name"),
-                        "device_id": device_id,
-                        "device_name": info.get("device_name"),
-                        "metric": None,
-                        "value": None,
-                        "threshold": None,
-                        "threshold2": None,
-                        "operator": None,
-                        "severity": "critical",
-                        "message": f"อุปกรณ์ไม่ตอบสนอง ({int(seconds_since)}s) | เหตุผล: Timeout",
-                        "time": now.strftime("%Y-%m-%d %H:%M:%S"),
-                        "event": "OFFLINE"
-                    }
-                    
-                    add_alert_to_logs(offline_alert, project_id)
-                    print(f"[Alert Engine] 🔴 {device_id} ตรวจพบว่า OFFLINE")
-                    
-            except Exception as e:
-                print(f"[Alert Engine] Error checking device {device_id}: {e}")
-                continue
-        
-        # Save updated status
-        save_status(status, project_id)
-        
+        from .alert_manager import get_alerts, resolve_alert
+        existing = get_alerts(project_id)
+        for al in existing:
+            if str(al.get('device_id')) == str(device_id) and al.get('alert_type') == alert_type:
+                resolve_alert(project_id, al.get('id'))
     except Exception as e:
-        print(f"[Alert Engine] Error in check_offline_devices: {e}")
+        print(f"Error resolving alerts: {e}")
+
+def load_project_users_local(project_id: str) -> Dict:
+    path = os.path.join(_get_project_dir(project_id), "users.json")
+    if not os.path.exists(path):
+        return {}
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except:
+        return {}
+
+def _get_device_info(project_id: str, device_id: str):
+    """Get device name and converter name from config"""
+    try:
+        config_path = os.path.join(_get_project_dir(project_id), "ConfigDevice.json")
+        if not os.path.exists(config_path):
+            return None, None
+        with open(config_path, 'r', encoding='utf-8') as f:
+            config = json.load(f)
+        for conv in config.get('converters', []):
+            conv_name = conv.get('name') or conv.get('protocol') or "Unknown Converter"
+            for dev in conv.get('devices', []):
+                if str(dev.get('id')) == str(device_id):
+                    dev_name = dev.get('name') or f"Device {device_id}"
+                    return dev_name, conv_name
+    except:
+        pass
+    return None, None
+
+def send_notifications(project_id: str, message: str, device_id: str, value: Any):
+    """Send notifications (LINE + Email) — called only on actual state changes."""
+    global _LINE_ALERT_MANAGER
     
+    # Block during grace period
+    if _is_in_grace_period():
+        print(f"[ALERT] Notification BLOCKED (grace period): {message}")
+        return
+
+    dev_name, conv_name = _get_device_info(project_id, device_id)
+    display_name = dev_name if dev_name else f"Device {device_id}"
+
+    # LINE notifications
+    try:
+        if _LINE_ALERT_MANAGER is None:
+            from services.backend.integrations.line_bot.line_config import LineConfig
+            from services.backend.integrations.line_bot.line_service import LineBotService
+            from services.backend.integrations.line_bot.alert_manager import AlertManager as LineAlertManager
+            cfg = LineConfig.from_env()
+            try:
+                cfg.validate()
+            except Exception:
+                cfg = None
+            if cfg:
+                _LINE_ALERT_MANAGER = LineAlertManager(LineBotService(cfg))
+
+        if _LINE_ALERT_MANAGER is not None:
+            try:
+                text = (
+                    f"{message}\n\n"
+                    f"📦 Device: {display_name}\n"
+                    f"🔌 Converter: {conv_name or '-'}\n"
+                    f"🆔 ID: {device_id}\n"
+                    f"📊 Value: {value}\n"
+                    f"🕒 Time: {datetime.now().strftime('%H:%M:%S')}"
+                )
+                _LINE_ALERT_MANAGER.send_alert_to_project_users(project_id, text)
+                print(f"[LINE ALERT] ✅ Sent: {message}")
+            except Exception as e:
+                print(f"[LINE ALERT] Error: {e}")
+    except Exception as e:
+        print(f"[LINE ALERT] Init error: {e}")
+
+    # Email notifications
+    try:
+        users = load_project_users_local(project_id)
+        recipients = []
+        for username, user_data in users.items():
+            notif_prefs = user_data.get('notifications', {})
+            if notif_prefs.get('email', False) and user_data.get('email'):
+                recipients.append(user_data['email'])
+        if recipients:
+            subject = f"🚨 EnergyLink Alert: {project_id} - {device_id}"
+            body = f"""Alert: {message}
+Device: {device_id}
+Value: {value}
+Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+---
+This is an automated alert from EnergyLink system."""
+            from services.backend.api.email.email_service import send_email
+            for recipient in recipients:
+                send_email(recipient, subject, body)
+    except Exception as e:
+        print(f"[EMAIL ALERT] Error: {e}")
+
+def log_alert(project_id: str, device_id: str, alert_type: str, message: str):
+    """Append to alert_logs.json and SQLite"""
+    path = _get_alert_logs_path(project_id)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     
+    new_log = {
+        "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "event": "ALERT",
+        "rule_name": alert_type,
+        "device_id": device_id,
+        "message": message,
+        "severity": "critical"
+    }
+    
+    try:
+        logs = []
+        if os.path.exists(path):
+            with open(path, 'r', encoding='utf-8') as f:
+                logs = json.load(f)
+        logs.insert(0, new_log)
+        if len(logs) > 1000:
+            logs = logs[:1000]
+        with open(path, 'w', encoding='utf-8') as f:
+            json.dump(logs, f, indent=2, ensure_ascii=False)
+        add_alert(device_id, alert_type, message, project_id)
+    except Exception as e:
+        print(f"Error logging alert: {e}")

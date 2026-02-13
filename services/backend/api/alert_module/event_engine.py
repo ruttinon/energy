@@ -1,11 +1,16 @@
 import json
 import os
+import sys
 from datetime import datetime
 
-THIS_FILE = os.path.abspath(__file__)
-THIS_DIR = os.path.dirname(THIS_FILE)
-PROJECT_ROOT = os.path.abspath(os.path.join(THIS_DIR, "..", "..", ".."))
-DATA_DIR = os.path.join(PROJECT_ROOT, "data")
+if getattr(sys, 'frozen', False):
+    ROOT = os.path.dirname(sys.executable)
+    DATA_DIR = os.path.join(ROOT, "services", "backend", "data")
+else:
+    THIS_FILE = os.path.abspath(__file__)
+    THIS_DIR = os.path.dirname(THIS_FILE)
+    PROJECT_ROOT = os.path.abspath(os.path.join(THIS_DIR, "..", "..", ".."))
+    DATA_DIR = os.path.join(PROJECT_ROOT, "data")
 
 EVENT_LOG_PATH = os.path.join(DATA_DIR, "logs", "event_logs.json")
 os.makedirs(os.path.dirname(EVENT_LOG_PATH), exist_ok=True)

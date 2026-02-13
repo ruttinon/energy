@@ -1,0 +1,45 @@
+{
+  "name": "Modbus UDP Driver",
+  "version": "1.0",
+  "type": "converter",
+  "description": "Modbus over UDP using MBAP header (same PDU as Modbus TCP) with datagram transport.",
+  "protocols_supported": [
+    "modbus_udp",
+    "udp"
+  ],
+  "connection_types": [
+    "udp_client",
+    "udp_server"
+  ],
+  "network_settings": {
+    "default_host": "0.0.0.0",
+    "default_port": 502,
+    "port_range": [1, 65535],
+    "timeout_default": 3.0,
+    "keepalive_default": false,
+    "max_connections": 100,
+    "retry_interval": 5.0,
+    "broadcast_enabled": true
+  },
+  "driver_behavior": {
+    "auto_reconnect": true,
+    "thread_safe": true,
+    "logging_level": "info",
+    "enable_statistics": true,
+    "realtime_mode": false
+  },
+  "examples": {
+    "udp_client": {
+      "protocol": "modbus_udp",
+      "connection_type": "udp_client",
+      "host": "192.168.1.10",
+      "port": 502
+    },
+    "udp_server": {
+      "protocol": "udp",
+      "connection_type": "udp_server",
+      "host": "0.0.0.0",
+      "port": 502
+    }
+  }
+}

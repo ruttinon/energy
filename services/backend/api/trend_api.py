@@ -1,10 +1,27 @@
 import os
 import json
+import sys
 from typing import Optional
 
-ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
-PROJECTS_ROOT = os.path.join(ROOT, 'projects')
-TEMPLATES_ROOT = os.path.join(os.path.dirname(__file__), '..', 'device_templates')
+if getattr(sys, 'frozen', False):
+    ROOT = os.path.dirname(sys.executable)
+    PROJECTS_ROOT = os.path.join(ROOT, 'projects')
+else:
+    ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+    PROJECTS_ROOT = os.path.join(ROOT, 'projects')
+
+def _resolve_templates_root():
+    candidates = [
+        os.path.join(ROOT, 'services', 'backend', 'device_templates'),
+        os.path.join(ROOT, 'device_templates'),
+        os.path.join(ROOT, 'EnergyLink_v2.0', 'device_templates')
+    ]
+    for p in candidates:
+        if os.path.isdir(p):
+            return p
+    return candidates[0]
+
+TEMPLATES_ROOT = _resolve_templates_root()
 
 def _config_path(project_id: str):
     return os.path.join(PROJECTS_ROOT, project_id, 'ConfigDevice.json')

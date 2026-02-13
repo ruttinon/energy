@@ -1,0 +1,9 @@
+{
+  "appId": "com.energylink.app",
+  "appName": "EnergyLink",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "http",
+    "cleartext": true
+  }
+}

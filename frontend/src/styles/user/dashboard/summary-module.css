@@ -1,0 +1,61 @@
+/* ============================================================
+   SUMMARY MODULE CSS - WHITE-GOLD PREMIUM THEME
+   Premium Energy Technology Design
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800;900&display=swap');
+
+/* ===================== STATUS OVERVIEW ===================== */
+.status-overview {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.status-item {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(12px);
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 20px;
+  text-align: center;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  color: #1e293b;
+}
+
+.status-item:hover {
+  transform: translateY(-4px);
+  border-color: #eab308;
+  box-shadow: 0 12px 30px rgba(234, 179, 8, 0.15);
+}
+
+/* OK Status */
+.status-item.ok {
+  border-color: #cbd5e1;
+  background: white;
+}
+.status-item.ok h3 { color: #10b981; }
+
+/* Warning Status */
+.status-item.warn {
+  border-color: #fde047;
+  background: #fefce8;
+}
+.status-item.warn h3 { color: #d97706; }
+
+/* Critical Status */
+.status-item.crit {
+  border-color: #fca5a5;
+  background: #fef2f2;
+  animation: criticalPulse 2s infinite;
+}
+.status-item.crit h3 { color: #dc2626; }
+
+@keyframes criticalPulse {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.2); }
+  70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}

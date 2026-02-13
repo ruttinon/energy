@@ -1,0 +1,8 @@
+/build/*
+!/build/.npmkeep
+
+# Do not commit keystore
+my-release-key.jks
+
+# Do not commit keystore properties
+keystore.properties

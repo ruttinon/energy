@@ -28,6 +28,24 @@ def _init_db():
         )
     """)
     
+    # Table: payments (monthly invoices)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS payments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            project_id TEXT NOT NULL,
+            month TEXT NOT NULL,
+            scope TEXT NOT NULL,
+            target_id TEXT NOT NULL,
+            target_name TEXT,
+            amount REAL DEFAULT 0,
+            status TEXT DEFAULT 'due',
+            due_date TEXT,
+            paid_at TEXT,
+            ref TEXT,
+            UNIQUE(project_id, month, scope, target_id)
+        )
+    """)
+    
     conn.commit()
     conn.close()
 
@@ -193,3 +211,80 @@ def get_weekly_records(project_id: str, year: str) -> List[Dict]:
     finally:
         conn.close()
     return out
+
+
+def upsert_payment(project_id: str, month: str, scope: str, target_id: str, target_name: str, amount: float, status: str, due_date: str, paid_at: Optional[str] = None, ref: Optional[str] = None):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute("""
+            INSERT INTO payments (project_id, month, scope, target_id, target_name, amount, status, due_date, paid_at, ref)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(project_id, month, scope, target_id) DO UPDATE SET
+                target_name = excluded.target_name,
+                amount = excluded.amount,
+                status = excluded.status,
+                due_date = excluded.due_date,
+                paid_at = excluded.paid_at,
+                ref = excluded.ref
+        """, (project_id, month, scope, target_id, target_name, float(amount or 0), status, due_date, paid_at, ref))
+        conn.commit()
+    except Exception as e:
+        print(f"[BillingStorage] upsert_payment error: {e}")
+    finally:
+        conn.close()
+
+
+def list_payments(project_id: str, month: Optional[str] = None) -> List[Dict]:
+    conn = get_db_connection()
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+    try:
+        if month:
+            cur.execute("SELECT * FROM payments WHERE project_id=? AND month=? ORDER BY scope, target_id", (project_id, month))
+        else:
+            cur.execute("SELECT * FROM payments WHERE project_id=? ORDER BY month DESC, scope, target_id", (project_id,))
+        rows = cur.fetchall()
+        return [dict(r) for r in rows]
+    except Exception as e:
+        print(f"[BillingStorage] list_payments error: {e}")
+        return []
+    finally:
+        conn.close()
+
+
+def list_overdue(project_id: str) -> List[Dict]:
+    conn = get_db_connection()
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+    today = datetime.now().strftime("%Y-%m-%d")
+    try:
+        cur.execute("""
+            SELECT * FROM payments 
+            WHERE project_id=? AND status!='paid' AND due_date < ?
+            ORDER BY month DESC
+        """, (project_id, today))
+        rows = cur.fetchall()
+        return [dict(r) for r in rows]
+    except Exception as e:
+        print(f"[BillingStorage] list_overdue error: {e}")
+        return []
+    finally:
+        conn.close()
+
+
+def mark_paid(project_id: str, month: str, scope: str, target_id: str, ref: Optional[str] = None):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    try:
+        cur.execute("""
+            UPDATE payments 
+            SET status='paid', paid_at=?, ref=COALESCE(?, ref)
+            WHERE project_id=? AND month=? AND scope=? AND target_id=?
+        """, (now, ref, project_id, month, scope, target_id))
+        conn.commit()
+    except Exception as e:
+        print(f"[BillingStorage] mark_paid error: {e}")
+    finally:
+        conn.close()

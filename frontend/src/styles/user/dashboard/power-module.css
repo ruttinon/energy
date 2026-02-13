@@ -1,0 +1,101 @@
+/* =========================================
+   POWER MODULE - WHITE-GOLD PREMIUM THEME
+   Premium Energy Technology Design
+   ========================================= */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800&display=swap');
+
+/* Wrapper & Layout */
+.power-wrapper {
+  display: flex;
+  height: calc(100vh - 140px);
+  gap: 20px;
+  padding: 20px;
+  background: #f8fafc !important; /* Slate-50 */
+  color: #1e293b; /* Slate-800 */
+  font-family: 'Rajdhani', 'Inter', sans-serif;
+  position: relative;
+}
+
+/* Animated Background */
+.power-wrapper::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background:
+    radial-gradient(circle at 30% 40%, rgba(234, 179, 8, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 70% 60%, rgba(202, 138, 4, 0.05) 0%, transparent 50%);
+  animation: bgRotate3D 40s linear infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes bgRotate3D {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Sidebar */
+.power-sidebar {
+  width: 120px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  padding-right: 20px;
+  border-right: 1px solid rgba(226, 232, 240, 0.8); /* Slate-200 */
+  position: relative;
+  z-index: 1;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 20px 20px 20px 0;
+}
+
+.sidebar-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sidebar-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #eab308, transparent);
+  margin: 5px 0;
+  opacity: 0.5;
+}
+
+/* Buttons */
+.pbtn {
+  background: #ffffff;
+  border: 1px solid #cbd5e1; /* Slate-300 */
+  color: #64748b; /* Slate-500 */
+  padding: 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 700;
+  transition: all 0.3s ease;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  font-size: 13px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.pbtn:hover {
+  border-color: #eab308; /* Yellow-500 */
+  color: #ca8a04; /* Yellow-600 */
+  background: #fffbeb; /* Yellow-50 */
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(234, 179, 8, 0.2);
+}
+
+.pbtn.active {
+  background: linear-gradient(135deg, #eab308 0%, #ca8a04 100%);
+  border-color: #ca8a04;
+  color: white;
+  box-shadow: 0 4px 15px rgba(234, 179, 8, 0.4);
+}

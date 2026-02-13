@@ -1,0 +1,8 @@
+{
+    "admin": {
+        "username": "admin",
+        "password": "1234",
+        "role": "admin",
+        "allowed_projects": []
+    }
+}

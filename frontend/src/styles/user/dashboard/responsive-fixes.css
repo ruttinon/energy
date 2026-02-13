@@ -1,0 +1,433 @@
+/* ============================================================
+   GLOBAL RESPONSIVE FIXES - GOLD-YELLOW-BLACK THEME
+   Ensures consistent sizing and responsive behavior
+   ============================================================ */
+
+/* ===================== PREVENT BOX SHRINKING ===================== */
+* {
+    box-sizing: border-box;
+    flex-shrink: 0;
+    /* Prevent flex items from shrinking */
+}
+
+/* ===================== CONTAINER FIXES ===================== */
+.cards,
+.card,
+.energy-wrapper,
+.quality-wrapper,
+.premium-quality,
+.overview-content {
+    min-width: 0;
+    /* Allow proper shrinking when needed */
+    width: 100%;
+}
+
+/* ===================== FLEXIBLE LAYOUTS ===================== */
+.layout,
+.cr-layout,
+.mc-workspace,
+.pv-main-layout {
+    display: flex;
+    flex-wrap: wrap;
+    width: 100%;
+    min-height: 100vh;
+}
+
+/* ===================== RESPONSIVE GRID SYSTEMS ===================== */
+.quality-layout,
+.overview-top-grid,
+.editor-grid,
+.adddev-layout {
+    display: grid;
+    gap: 20px;
+    width: 100%;
+}
+
+/* Ensure grids don't overflow */
+@media (max-width: 1400px) {
+    .editor-grid {
+        grid-template-columns: 240px 1fr 300px;
+    }
+}
+
+@media (max-width: 1200px) {
+    .quality-layout {
+        grid-template-columns: 180px 1fr;
+    }
+
+    .overview-top-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .editor-grid {
+        grid-template-columns: 200px 1fr 280px;
+    }
+}
+
+@media (max-width: 1024px) {
+
+    .quality-layout,
+    .editor-grid,
+    .adddev-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .quality-menu {
+        flex-direction: row;
+        flex-wrap: wrap;
+        width: 100%;
+    }
+}
+
+/* ===================== SIDEBAR RESPONSIVE ===================== */
+.sidebar,
+.cr-sidebar,
+.pv-left-sidebar {
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+}
+
+@media (max-width: 768px) {
+
+    .sidebar,
+    .cr-sidebar {
+        position: fixed;
+        left: 0;
+        top: 105px;
+        height: calc(100vh - 105px);
+        z-index: 1000;
+        transform: translateX(-100%);
+    }
+
+    .sidebar.open,
+    .cr-sidebar.open {
+        transform: translateX(0);
+    }
+
+    .content {
+        margin-left: 0 !important;
+        width: 100%;
+    }
+}
+
+/* ===================== CARD RESPONSIVE ===================== */
+.card,
+.data-card,
+.energy-card,
+.stat-card {
+    width: 100%;
+    max-width: 100%;
+    min-width: 280px;
+    /* Minimum width to prevent over-shrinking */
+}
+
+@media (max-width: 768px) {
+
+    .card,
+    .data-card {
+        padding: 16px;
+        min-width: 0;
+        /* Allow full shrink on mobile */
+    }
+}
+
+/* ===================== TABLE RESPONSIVE ===================== */
+.premium-table,
+.energy-table,
+.power-table {
+    width: 100%;
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.table-wrapper,
+.energy-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+}
+
+/* Ensure tables inside wrappers have proper min-width */
+.table-wrapper table,
+.energy-table-wrapper table {
+    min-width: 600px;
+}
+
+@media (max-width: 768px) {
+
+    .premium-table,
+    .energy-table,
+    .power-table {
+        font-size: 12px;
+    }
+
+    .premium-table th,
+    .energy-table th,
+    .power-table th {
+        padding: 10px 8px;
+        font-size: 10px;
+    }
+
+    .premium-table td,
+    .energy-table td,
+    .power-table td {
+        padding: 10px 8px;
+        font-size: 12px;
+    }
+}
+
+/* ===================== BUTTON GROUPS RESPONSIVE ===================== */
+.ui-toolbar,
+.toolbar-actions,
+.tab-container,
+.energy-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    width: 100%;
+}
+
+@media (max-width: 768px) {
+
+    .control-btn,
+    .pbtn,
+    .qbtn,
+    .ebtn {
+        flex: 1 1 auto;
+        min-width: 120px;
+        padding: 10px 16px;
+        font-size: 12px;
+    }
+}
+
+/* ===================== VALUE DISPLAY RESPONSIVE ===================== */
+#bar-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+    gap: 20px;
+    width: 100%;
+}
+
+.value-column {
+    flex: 1 1 200px;
+    min-width: 150px;
+    max-width: 250px;
+}
+
+@media (max-width: 768px) {
+    .value-column {
+        flex: 1 1 150px;
+        min-width: 120px;
+    }
+
+    .value-display-box {
+        min-height: 80px;
+        padding: 16px;
+    }
+
+    .value-number {
+        font-size: 24px;
+    }
+
+    .value-unit {
+        font-size: 14px;
+    }
+}
+
+/* ===================== HEADER RESPONSIVE ===================== */
+header,
+.cr-header,
+.pv-header-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 24px;
+    gap: 12px;
+}
+
+@media (max-width: 768px) {
+
+    header,
+    .cr-header {
+        padding: 8px 16px;
+    }
+
+    .logo-text,
+    .brand-text {
+        font-size: 16px;
+    }
+}
+
+/* ===================== MODAL RESPONSIVE ===================== */
+.modal-content,
+.popup {
+    width: 90%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+@media (max-width: 768px) {
+
+    .modal-content,
+    .popup {
+        width: 95%;
+        padding: 20px;
+    }
+}
+
+/* ===================== CHART RESPONSIVE ===================== */
+.chart-box canvas,
+canvas {
+    max-width: 100% !important;
+    height: auto !important;
+}
+
+@media (max-width: 768px) {
+    .chart-box {
+        padding: 16px;
+    }
+
+    .chart-box canvas {
+        height: 250px !important;
+    }
+}
+
+/* ===================== PREVENT HORIZONTAL OVERFLOW ===================== */
+body,
+html {
+    overflow-x: hidden;
+    max-width: 100vw;
+}
+
+.layout,
+.content,
+main {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+/* ===================== FLEXIBLE IMAGES ===================== */
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* ===================== SCROLLBAR CONSISTENCY ===================== */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #FFD700, #B8860B);
+    border-radius: 4px;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #FFC107, #FFD700);
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+}
+
+/* ===================== UTILITY CLASSES ===================== */
+.w-full {
+    width: 100%;
+}
+
+.max-w-full {
+    max-width: 100%;
+}
+
+.flex-wrap {
+    flex-wrap: wrap;
+}
+
+.overflow-auto {
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.overflow-x-auto {
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+}
+
+.overflow-y-auto {
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+}
+
+.overflow-hidden {
+    overflow: hidden;
+}
+
+.min-h-0 {
+    min-height: 0;
+}
+
+.max-w-full {
+    max-width: 100%;
+}
+
+/* === DATA CONTAINER FIXES === */
+.data-container,
+.device-data-container,
+.billing-data-container {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+}
+
+.data-container table,
+.device-data-container table,
+.billing-data-container table {
+    min-width: 800px;
+}
+
+/* ===================== PRINT STYLES ===================== */
+@media print {
+
+    .sidebar,
+    .cr-sidebar,
+    .pv-left-sidebar,
+    .pv-right-sidebar,
+    header,
+    .status-footer {
+        display: none;
+    }
+
+    .content {
+        margin-left: 0 !important;
+        width: 100%;
+    }
+
+    table {
+        page-break-inside: avoid;
+    }
+}
+
+/* === ADDITIONAL OVERFLOW FIXES === */
+.content-wrapper,
+.main-content,
+.page-content {
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+    min-height: 0;
+}

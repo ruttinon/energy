@@ -1,9 +1,14 @@
-import os, json
+import os, json, sys
 
-THIS_FILE = os.path.abspath(__file__)
-THIS_DIR = os.path.dirname(THIS_FILE)
-PROJECT_ROOT = os.path.abspath(os.path.join(THIS_DIR, "..", ".."))
-DATA_DIR = os.path.join(PROJECT_ROOT, "data")
+if getattr(sys, 'frozen', False):
+    # Running as compiled exe
+    ROOT = os.path.dirname(sys.executable)
+    DATA_DIR = os.path.join(ROOT, "services", "backend", "data")
+else:
+    THIS_FILE = os.path.abspath(__file__)
+    THIS_DIR = os.path.dirname(THIS_FILE)
+    PROJECT_ROOT = os.path.abspath(os.path.join(THIS_DIR, "..", ".."))
+    DATA_DIR = os.path.join(PROJECT_ROOT, "data")
 
 CONFIG_PATH = os.path.join(DATA_DIR, "system_config.json")
 

@@ -1,0 +1,97 @@
+/* ===================== GLOBAL RESET ===================== */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ===================== MAIN WRAPPER ===================== */
+.energy-intelligence-wrapper {
+  background: #f8fafc; /* Slate-50 */
+  min-height: 100vh;
+  padding: 24px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: #1e293b; /* Slate-800 */
+}
+
+/* ===================== THEME OVERRIDES FOR EXISTING MARKUP ===================== */
+.energy-wrapper {
+  position: relative;
+  padding: 16px;
+  background: #f8fafc;
+}
+
+.energy-wrapper::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(800px 400px at 10% 10%, rgba(234, 179, 8, 0.05), transparent 60%),
+    radial-gradient(600px 300px at 90% 20%, rgba(202, 138, 4, 0.05), transparent 60%);
+  filter: blur(0.5px);
+}
+
+.energy-wrapper .card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 16px !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important;
+  color: #1e293b !important;
+}
+
+.energy-wrapper .card h4 {
+  color: #1e293b;
+  letter-spacing: 0.5px;
+  font-weight: 700;
+}
+
+.energy-wrapper table thead {
+  background: #f1f5f9 !important; /* Slate-100 */
+}
+
+.energy-wrapper table thead th {
+  color: #64748b !important; /* Slate-500 */
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 700;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.energy-wrapper table tbody td {
+  background: #ffffff !important;
+  border: 1px solid #f1f5f9 !important;
+  color: #334155 !important; /* Slate-700 */
+  font-weight: 500;
+}
+
+.energy-wrapper table tbody tr:hover td {
+  background: #fffbeb !important; /* Yellow-50 */
+}
+
+/* Tabs */
+.energy-wrapper .ebtn.tab {
+  padding: 10px 20px !important;
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #64748b !important;
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.5px !important;
+  transition: all .3s ease !important;
+}
+
+.energy-wrapper .ebtn.tab:hover {
+  background: #f8fafc !important;
+  border-color: #eab308 !important;
+  color: #ca8a04 !important;
+  box-shadow: 0 4px 12px rgba(234, 179, 8, 0.1) !important;
+}
+
+.energy-wrapper .ebtn.tab.active {
+  background: linear-gradient(135deg, #eab308, #ca8a04) !important;
+  color: #ffffff !important;
+  border-color: #ca8a04 !important;
+  box-shadow: 0 4px 12px rgba(234, 179, 8, 0.3) !important;
+  font-weight: 700 !important;
+}

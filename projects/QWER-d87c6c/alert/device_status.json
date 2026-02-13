@@ -1,1 +1,13 @@
-{}
+{
+  "2": {
+    "online": false,
+    "last_seen": null,
+    "offline_since": null
+  },
+  "4": {
+    "online": true,
+    "last_seen": "2026-02-03 15:45:22",
+    "offline_since": null,
+    "offline_reason": null
+  }
+}

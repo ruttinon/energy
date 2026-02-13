@@ -1,7 +1,12 @@
 import json
 import os
+import sys
 
-PROJECTS_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "projects"))
+if getattr(sys, 'frozen', False):
+    ROOT = os.path.dirname(sys.executable)
+    PROJECTS_ROOT = os.path.join(ROOT, 'projects')
+else:
+    PROJECTS_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "projects"))
 
 def _get_rules_path(project_id):
     if not project_id:

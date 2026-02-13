@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request, HTTPException, Body, Depends
+from fastapi import APIRouter, Request, HTTPException, Body, Depends, Query
 from typing import Optional, Dict, List, Any
 import os
 import json
@@ -34,6 +34,84 @@ def get_active_project_id():
     except Exception:
         pass
     return None
+
+# ===========================================
+# ACTIVE ALERTS (aggregated)
+# ===========================================
+@router.get('/active')
+def get_active_alerts(project_id: Optional[str] = None):
+    """Aggregate active alerts across devices and offline status"""
+    try:
+        pid = project_id or get_active_project_id()
+        if not pid:
+            return {"status": "error", "message": "No active project", "data": []}
+        
+        # NOTE: Do NOT call check_offline_devices() here.
+        # The background monitor thread handles this every 30s.
+        # Calling it from API endpoints causes duplicate notification spam.
+        
+        status_map = {}
+        try:
+            status_map = load_status(pid) or {}
+        except Exception:
+            status_map = {}
+        
+        data = READINGS.get(pid, {}) or {}
+        alerts: List[Dict[str, Any]] = []
+        
+        # Offline alerts
+        try:
+            for dev_id, st in (status_map or {}).items():
+                if not st.get('online'):
+                    alerts.append({
+                        "type": "OFFLINE",
+                        "title": "Device Offline",
+                        "device_id": dev_id,
+                        "severity": "critical",
+                        "message": st.get('offline_reason') or "No response",
+                        "timestamp": st.get('offline_since') or st.get('last_seen') or datetime.utcnow().isoformat()
+                    })
+        except Exception:
+            pass
+        
+        # Rule-based alerts (dry-run)
+        try:
+            for dev_id, rec in data.items():
+                values = rec.get('values') or {}
+                ts = rec.get('timestamp') or ''
+                try:
+                    rule_alerts = check_alerts(values, dev_id, pid, dry_run=True) or []
+                except Exception:
+                    rule_alerts = []
+                for a in rule_alerts:
+                    alerts.append({
+                        "type": a.get('type') or "ALERT",
+                        "title": a.get('title') or a.get('type') or "Alert",
+                        "device_id": a.get('device_id') or dev_id,
+                        "severity": a.get('severity') or "warning",
+                        "message": a.get('message') or a.get('desc') or "",
+                        "timestamp": a.get('time') or a.get('timestamp') or ts
+                    })
+        except Exception:
+            pass
+        
+        # Sort by severity/time (critical first)
+        def _sev_rank(s):
+            s = str(s or '').lower()
+            if s == 'critical': return 3
+            if s == 'error': return 2
+            if s == 'warning': return 1
+            return 0
+        alerts.sort(key=lambda x: (_sev_rank(x.get('severity')), str(x.get('timestamp') or '')), reverse=True)
+        
+        return {"status": "ok", "data": alerts}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get('/{project_id}/active')
+def get_active_alerts_for_project(project_id: str):
+    """Compatibility path: /{project_id}/active"""
+    return get_active_alerts(project_id=project_id)
 
 # ===========================================
 # GET CURRENT READINGS (for Param Dropdown)
@@ -109,11 +187,8 @@ def get_device_status(project_id: Optional[str] = None):
         if not pid:
             return {}
         
-        # First check for offline devices (updates status file)
-        try:
-            check_offline_devices(pid)
-        except:
-            pass
+        # NOTE: Offline check is handled by background monitor thread.
+        # Do NOT call check_offline_devices() from API to prevent spam.
         
         # Load status from file
         status_map = load_status(pid)
@@ -250,3 +325,49 @@ def clear_alerts(project_id: Optional[str] = None):
         return {"message": "Alerts cleared"}
     except Exception as e:
          raise HTTPException(status_code=500, detail=str(e))
+
+# ===========================================
+# GET ALERT PARAMETERS (Dynamic from Template)
+# ===========================================
+@router.get('/parameters')
+def get_alert_parameters(project_id: Optional[str] = None):
+    """Get available metrics from device template"""
+    try:
+        # Tuple: (Path relative to backend service, Template Name)
+        # In a real app, this might be dynamic based on project config
+        template_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "device_templates", "socomec", "DIRIS A-40.json"))
+        
+        if not os.path.exists(template_path):
+             return {"status": "error", "message": "Template not found"}
+
+        with open(template_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        
+        registers = data.get('registers', [])
+        metrics = []
+        for reg in registers:
+            if 'key' in reg:
+                metrics.append({
+                    "key": reg['key'],
+                    "label": f"{reg.get('description', reg['key'])} ({reg.get('unit', '')})",
+                    "unit": reg.get('unit', '')
+                })
+        
+        return metrics
+    except Exception as e:
+         raise HTTPException(status_code=500, detail=str(e))
+
+# ===========================================
+# TEST LINE ALERT
+# ===========================================
+@router.post("/test-line-alert")
+def test_line_alert(project_id: str = Query(...), message: str = Query("ทดสอบการแจ้งเตือน LINE")):
+    """ทดสอบส่งแจ้งเตือนไปยัง LINE สำหรับ project ที่ระบุ"""
+    try:
+        from .alert_engine import send_notifications
+        
+        send_notifications(project_id, message, "test_device", "test_value")
+        
+        return {"status": "ok", "message": f"ส่งการแจ้งเตือน LINE ให้ project {project_id} แล้ว"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

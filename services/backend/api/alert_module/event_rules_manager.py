@@ -1,9 +1,11 @@
-import json, os
+import json, os, sys
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-# services/backend/api/alert_module -> ... -> energylink (root)
-PROJECT_ROOT = os.path.abspath(os.path.join(THIS_DIR, "..", "..", "..", "..")) 
-DATA_DIR = os.path.join(PROJECT_ROOT, "data")
+if getattr(sys, 'frozen', False):
+    ROOT = os.path.dirname(sys.executable)
+else:
+    ROOT = os.path.abspath(os.path.join(THIS_DIR, "..", "..", "..", ".."))
+DATA_DIR = os.path.join(ROOT, "data")
 RULE_PATH = os.path.join(DATA_DIR, "event_rules.json")
 
 if not os.path.exists(os.path.dirname(RULE_PATH)):

@@ -1,0 +1,152 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    /* Premium White Gold Theme Colors */
+    --premium-gold: #D4AF37;       /* Classic Metallic Gold */
+    --premium-gold-light: #F3E5AB; /* Champagne / Vanilla */
+    --premium-gold-dark: #AA8C2C;  /* Antique Gold */
+    --premium-text: #1F2937;       /* Dark Gray for readability */
+    --premium-text-light: #64748B; /* Slate Gray */
+    --premium-bg: #FAFAFA;         /* Off-White Background */
+    --premium-card: rgba(255, 255, 255, 0.85); /* Frosted White */
+    
+    /* Legacy Neon Variables mapped to Gold Theme for compatibility */
+    --neon-cyan: #D4AF37;    /* Gold */
+    --neon-blue: #C5A028;    /* Darker Gold */
+    --neon-amber: #AA8C2C;   /* Antique Gold */
+    --neon-purple: #E5C15D;  /* Lighter Gold */
+    
+    /* Backgrounds */
+    --bg-deep: #FAFAFA;
+    --bg-glass: rgba(255, 255, 255, 0.7);
+    
+    /* Status */
+    --status-online: #10B981;  /* Emerald Green */
+    --status-offline: #EF4444; /* Red */
+    --status-warning: #F59E0B; /* Amber */
+}
+
+@layer base {
+    body {
+        @apply text-slate-800 font-rajdhani min-h-screen selection:bg-yellow-200 selection:text-yellow-900;
+        background-color: var(--premium-bg);
+        /* Subtle grid pattern handled in components or layout */
+    }
+}
+
+@layer utilities {
+    .animate-spin-slow {
+        animation: spin 3s linear infinite;
+    }
+    .animate-pulse-fast {
+        animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    .animate-scan {
+        animation: scan 2s linear infinite;
+    }
+    .animate-float {
+        animation: float 6s ease-in-out infinite;
+    }
+    
+    /* Premium Gold Glows */
+    .text-glow-cyan {
+        text-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+    }
+    .text-glow-amber {
+        text-shadow: 0 0 10px rgba(170, 140, 44, 0.3);
+    }
+    
+    .glass-panel {
+        @apply bg-white/70 backdrop-blur-xl border border-yellow-500/20 shadow-lg shadow-yellow-500/5;
+    }
+
+    .glass-card {
+        @apply bg-white/80 backdrop-blur-xl border border-yellow-500/20 rounded-2xl shadow-xl shadow-yellow-900/5;
+    }
+
+    .text-glow-green {
+        text-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+    }
+    
+    .text-shadow-glow {
+        text-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+    }
+
+    .animate-pulse-slow {
+        animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    
+    /* Premium Gradients */
+    .bg-gradient-gold {
+        background: linear-gradient(135deg, #D4AF37 0%, #F3E5AB 50%, #AA8C2C 100%);
+    }
+    .text-gradient-gold {
+        background: linear-gradient(135deg, #B8860B 0%, #D4AF37 50%, #8B6914 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+}
+
+@keyframes scan {
+    0% { transform: translateY(-100%); }
+    100% { transform: translateY(100%); }
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f8fafc; /* slate-50 */
+}
+
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1; /* slate-300 */
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8; /* slate-400 */
+}
+
+/* Mobile: Hide scrollbars but keep scrolling */
+@media (max-width: 640px) {
+    .custom-scrollbar {
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none; /* IE 10+ */
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+        display: none; /* Chrome/Safari */
+        width: 0;
+        height: 0;
+    }
+}
+
+/* Utility to hide scrollbar always */
+.scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+
+/* Fabric JS / Canvas Overrides */
+.canvas-container {
+    @apply !rounded-xl overflow-hidden border border-white/5;
+}
+
+/* Chart Tooltip Customization */
+.chartjs-tooltip {
+    @apply bg-slate-900/90 backdrop-blur-md border border-white/10 rounded-lg shadow-xl p-2 text-xs !important;
+}

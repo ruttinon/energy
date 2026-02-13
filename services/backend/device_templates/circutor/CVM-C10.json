@@ -1,86 +1,85 @@
 {
-  
   "polling_interval": 3,
   "registers": [
-    { 
-      "key": "Voltage_L1", 
-      "address": 0, 
-      "function": 3, 
-      "datatype": "int32", 
+    {
+      "key": "Voltage_L1",
+      "address": 0,
+      "function": 3,
+      "datatype": "int32",
       "words": 2,
-      "scale": 10, 
-      "unit": "V", 
-      "description": "แรงดันไฟฟ้าเฟส L1 ต่อ Neutral (หน่วยโวลต์)" 
+      "scale": 10,
+      "unit": "V",
+      "description": "แรงดันไฟฟ้าเฟส L1 ต่อ Neutral (หน่วยโวลต์)"
     },
-    { 
-      "key": "Voltage_L2", 
-      "address": 16, 
-      "function": 3, 
-      "datatype": "int32", 
+    {
+      "key": "Voltage_L2",
+      "address": 16,
+      "function": 3,
+      "datatype": "int32",
       "words": 2,
-      "scale": 10, 
-      "unit": "V", 
-      "description": "แรงดันไฟฟ้าเฟส L2 ต่อ Neutral (หน่วยโวลต์)" 
+      "scale": 10,
+      "unit": "V",
+      "description": "แรงดันไฟฟ้าเฟส L2 ต่อ Neutral (หน่วยโวลต์)"
     },
-    { 
-      "key": "Voltage_L3", 
-      "address": 32, 
-      "function": 3, 
-      "datatype": "int32", 
+    {
+      "key": "Voltage_L3",
+      "address": 32,
+      "function": 3,
+      "datatype": "int32",
       "words": 2,
-      "scale": 10, 
-      "unit": "V", 
-      "description": "แรงดันไฟฟ้าเฟส L3 ต่อ Neutral (หน่วยโวลต์)" 
+      "scale": 10,
+      "unit": "V",
+      "description": "แรงดันไฟฟ้าเฟส L3 ต่อ Neutral (หน่วยโวลต์)"
     },
-    { 
-      "key": "Current_Total", 
-      "address": 6, 
-      "function": 3, 
-      "datatype": "int32", 
+    {
+      "key": "Current_Total",
+      "address": 6,
+      "function": 3,
+      "datatype": "int32",
       "words": 2,
-      "scale": 1000, 
-      "unit": "A", 
-      "description": "กระแสไฟฟ้ารวมทุกเฟส (หน่วยแอมป์)" 
+      "scale": 1000,
+      "unit": "A",
+      "description": "กระแสไฟฟ้ารวมทุกเฟส (หน่วยแอมป์)"
     },
-    { 
-      "key": "Frequency", 
-      "address": 8, 
-      "function": 3, 
-      "datatype": "int32", 
+    {
+      "key": "Frequency",
+      "address": 8,
+      "function": 3,
+      "datatype": "int32",
       "words": 2,
-      "scale": 10, 
-      "unit": "Hz", 
-      "description": "ความถี่ไฟฟ้ากระแสสลับ (หน่วยเฮิร์ตซ์)" 
+      "scale": 10,
+      "unit": "Hz",
+      "description": "ความถี่ไฟฟ้ากระแสสลับ (หน่วยเฮิร์ตซ์)"
     },
-    { 
-      "key": "ActiveEnergy", 
-      "address": 220, 
-      "function": 3, 
-      "datatype": "int32", 
-      "words": 2, 
+    {
+      "key": "ActiveEnergy",
+      "address": 220,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
       "scale": 1,
       "unit": "kWh",
-      "description": "พลังงานไฟฟ้าสะสมรวม (กิโลวัตต์ชั่วโมง)" 
+      "description": "พลังงานไฟฟ้าสะสมรวม (กิโลวัตต์ชั่วโมง)"
     },
-    { 
-      "key": "ActivePower_L1", 
-      "address": 4, 
-      "function": 3, 
-      "datatype": "int32", 
-      "words": 2, 
+    {
+      "key": "ActivePower_L1",
+      "address": 4,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
       "scale": 1000,
       "unit": "kWh",
-      "description": "พลังงานไฟฟ้าสะสมรวม (กิโลวัตต์ชั่วโมง)" 
+      "description": "พลังงานไฟฟ้าสะสมรวม (กิโลวัตต์ชั่วโมง)"
     },
-    { 
-      "key": "Power_Factor", 
-      "address": 12, 
-      "function": 3, 
-      "datatype": "int32", 
-      "words": 2, 
+    {
+      "key": "Power_Factor",
+      "address": 12,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
       "scale": 100,
       "unit": "kWh",
-      "description": "พลังงานไฟฟ้าสะสมรวม (กิโลวัตต์ชั่วโมง)" 
+      "description": "พลังงานไฟฟ้าสะสมรวม (กิโลวัตต์ชั่วโมง)"
     }
   ]
 }

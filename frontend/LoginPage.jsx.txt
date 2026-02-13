@@ -1,0 +1,526 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useApp } from './src/context/AppContext.jsx';
+import { getApiBase } from 'services/api';
+
+const EnergyLinkLogin = () => {
+  const navigate = useNavigate();
+  const { setIsAdminMode } = useApp();
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [currentTime, setCurrentTime] = useState('Loading...');
+  const [serverStatus, setServerStatus] = useState('ONLINE');
+  const [responseTime, setResponseTime] = useState('35ms');
+  const [isOffline, setIsOffline] = useState(false);
+
+  const backgrounds = [
+    'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1920',
+    'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1920',
+    'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=1920',
+    'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1920'
+  ];
+
+  // Clock update
+  useEffect(() => {
+    const updateClock = () => {
+      const now = new Date();
+      const date = now.toLocaleDateString('en-GB');
+      const time = now.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      });
+      setCurrentTime(`Bangkok | ${date} | ${time}`);
+    };
+
+    updateClock();
+    const interval = setInterval(updateClock, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Handle Enter key
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Enter') {
+        doLogin();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [username, password]);
+
+  const doLogin = async () => {
+    setErrorMsg('');
+
+    if (!username.trim() || !password) {
+      setErrorMsg('Please enter username and password');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const startTime = Date.now();
+      const API = getApiBase();
+      const res = await fetch(`${API}/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ username: username.trim(), password }),
+      });
+
+      const endTime = Date.now();
+      setResponseTime(`${endTime - startTime}ms`);
+
+      if (res.ok) {
+        const data = await res.json();
+        setIsAdminMode(true);
+        // Store Token and Role in SessionStorage (Isolation)
+        if (data.session_id) sessionStorage.setItem('auth_token', data.session_id);
+        sessionStorage.setItem('isAdminMode', '1');
+        sessionStorage.setItem('username', username.trim());
+        navigate('/app');
+      } else {
+        const userRes = await fetch(`${API}/login_user_any`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ username: username.trim(), password }),
+        });
+
+        if (userRes.ok) {
+          const data = await userRes.json();
+          setIsAdminMode(false);
+          // Store Token and Role in SessionStorage (Isolation)
+          if (data.session_id) sessionStorage.setItem('auth_token', data.session_id);
+          sessionStorage.setItem('isAdminMode', '0');
+          sessionStorage.setItem('username', username.trim());
+
+          if (data.project_id) {
+            navigate(`/app?pid=${encodeURIComponent(data.project_id)}`);
+          } else {
+            navigate('/app');
+          }
+        } else {
+          setErrorMsg('Invalid credentials');
+          setServerStatus('ERROR');
+          setIsOffline(true);
+        }
+      }
+    } catch (err) {
+      setErrorMsg('Connection error');
+      setServerStatus('OFFLINE');
+      setIsOffline(true);
+    }
+
+    setIsLoading(false);
+  };
+
+  return (
+    <div style={styles.body}>
+      {/* Grid Background */}
+      <div style={styles.gridBg}></div>
+
+      {/* Background Slideshow */}
+      <div style={styles.bgSlideshow}>
+        <div style={styles.bgSlider}>
+          {[...backgrounds, ...backgrounds, backgrounds[0]].map((bg, idx) => (
+            <div
+              key={idx}
+              style={{
+                ...styles.bgSlide,
+                backgroundImage: `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url(${bg})`
+              }}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Logo - Top Left */}
+      <div style={styles.logo}>
+        <div style={styles.logoPlaceholder}>⚡</div>
+      </div>
+
+      {/* Title - Top Right */}
+      <div style={styles.headerTitle}>
+        <h1 style={styles.headerTitleH1}>EnergyLink SCADA</h1>
+        <p style={styles.headerTitleP}>INTELLIGENT ENERGY MANAGEMENT</p>
+      </div>
+
+      {/* Login Form */}
+      <div style={styles.loginContainer}>
+        <h2 style={styles.loginTitle}>USER LOGIN</h2>
+
+        <div style={styles.formFields}>
+          {/* Username */}
+          <div style={styles.inputGroup}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFD700" strokeWidth="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="Enter your username..."
+              autoComplete="username"
+              style={styles.input}
+            />
+          </div>
+
+          {/* Password */}
+          <div style={styles.inputGroup}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFD700" strokeWidth="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+            <input
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter your password..."
+              autoComplete="current-password"
+              style={styles.input}
+            />
+            <button
+              onClick={() => setShowPassword(!showPassword)}
+              style={styles.toggleBtn}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFD700" strokeWidth="2">
+                {showPassword ? (
+                  <>
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </>
+                ) : (
+                  <>
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                    <line x1="1" y1="1" x2="23" y2="23" />
+                  </>
+                )}
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div style={styles.errorMsg}>{errorMsg}</div>
+
+        <button
+          onClick={doLogin}
+          disabled={isLoading}
+          style={styles.loginBtn}
+        >
+          {isLoading ? 'SIGNING IN...' : 'SIGN IN'}
+        </button>
+
+        <div style={styles.footerLinks}>
+          <label style={styles.footerLabel}>
+            <input
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              style={styles.checkbox}
+            />
+            Remember me
+          </label>
+          <span style={styles.footerSpan}>Forgot password?</span>
+        </div>
+      </div>
+
+      {/* Footer Status */}
+      <div style={styles.statusFooter}>
+        <div style={styles.statusLeft}>
+          <div style={styles.statusItem}>
+            <div style={{ ...styles.statusDot, ...(isOffline && styles.statusDotOffline) }}></div>
+            <span>SERVER <span>{serverStatus}</span></span>
+          </div>
+          <div style={styles.statusItem}>
+            <span>Response Time: <span>{responseTime}</span></span>
+          </div>
+        </div>
+        <div>{currentTime}</div>
+      </div>
+
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
+        
+        @keyframes slideStep {
+          0% { transform: translateX(0); }
+          12.5% { transform: translateX(0); }
+          18.75% { transform: translateX(-100vw); }
+          31.25% { transform: translateX(-100vw); }
+          37.5% { transform: translateX(-200vw); }
+          50% { transform: translateX(-200vw); }
+          56.25% { transform: translateX(-300vw); }
+          68.75% { transform: translateX(-300vw); }
+          75% { transform: translateX(-400vw); }
+          87.5% { transform: translateX(-400vw); }
+          93.75% { transform: translateX(-500vw); }
+          100% { transform: translateX(-600vw); }
+        }
+        
+        @keyframes pulse {
+          0%, 100% {
+            opacity: 0.9;
+            filter: drop-shadow(0 0 10px #FFD70044);
+          }
+          50% {
+            opacity: 1;
+            filter: drop-shadow(0 0 25px #FFD70088);
+          }
+        }
+        
+        @keyframes textShimmer {
+          0%, 100% { background-position: 0% center; }
+          50% { background-position: 100% center; }
+        }
+        
+        @keyframes titleShine {
+          0%, 100% { filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.8)); }
+          50% { filter: drop-shadow(0 0 35px rgba(255, 215, 0, 1)); }
+        }
+
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover,
+        input:-webkit-autofill:focus,
+        input:-webkit-autofill:active {
+          -webkit-box-shadow: 0 0 0 1000px transparent inset !important;
+          -webkit-text-fill-color: #FFD700 !important;
+          transition: background-color 5000s ease-in-out 100s;
+        }
+      `}</style>
+    </div>
+  );
+};
+
+const styles = {
+  body: {
+    minHeight: '100vh',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#000',
+    position: 'relative',
+    overflow: 'hidden',
+    fontFamily: "'Rajdhani', 'Inter', sans-serif",
+    margin: 0,
+    padding: 0
+  },
+  gridBg: {
+    position: 'absolute',
+    inset: 0,
+    backgroundImage: 'linear-gradient(#FFD70011 1px, transparent 1px), linear-gradient(90deg, #FFD70011 1px, transparent 1px)',
+    backgroundSize: '50px 50px',
+    pointerEvents: 'none'
+  },
+  bgSlideshow: {
+    position: 'absolute',
+    inset: 0,
+    overflow: 'hidden'
+  },
+  bgSlider: {
+    display: 'flex',
+    height: '100%',
+    animation: 'slideStep 80s ease-in-out infinite'
+  },
+  bgSlide: {
+    minWidth: '100vw',
+    width: '100vw',
+    height: '100%',
+    flexShrink: 0,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundRepeat: 'no-repeat'
+  },
+  logo: {
+    position: 'fixed',
+    top: '35px',
+    left: '40px',
+    width: '140px',
+    animation: 'pulse 3s infinite',
+    zIndex: 10
+  },
+  logoPlaceholder: {
+    fontSize: '80px',
+    color: '#FFD700',
+    filter: 'drop-shadow(0 0 25px rgba(255, 215, 0, 0.8))'
+  },
+  headerTitle: {
+    position: 'fixed',
+    top: '40px',
+    right: '40px',
+    textAlign: 'right',
+    zIndex: 10
+  },
+  headerTitleH1: {
+    fontFamily: "'Orbitron', sans-serif",
+    fontSize: '32px',
+    fontWeight: 900,
+    letterSpacing: '4px',
+    margin: 0,
+    background: 'linear-gradient(135deg, #FFD700 0%, #FFF8DC 50%, #FFD700 100%)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    backgroundClip: 'text',
+    filter: 'drop-shadow(0 0 25px rgba(255, 215, 0, 0.8)) drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5))',
+    animation: 'textShimmer 3s ease-in-out infinite',
+    backgroundSize: '200% auto'
+  },
+  headerTitleP: {
+    fontFamily: "'Rajdhani', sans-serif",
+    color: '#B8860B',
+    fontSize: '11px',
+    margin: '8px 0 0 0',
+    letterSpacing: '4px',
+    fontWeight: 600,
+    textTransform: 'uppercase',
+    textShadow: '0 0 10px rgba(255, 215, 0, 0.3)'
+  },
+  loginContainer: {
+    width: '400px',
+    zIndex: 2,
+    textAlign: 'center'
+  },
+  loginTitle: {
+    fontFamily: "'Orbitron', sans-serif",
+    fontSize: '28px',
+    fontWeight: 900,
+    letterSpacing: '6px',
+    margin: '0 0 40px 0',
+    textTransform: 'uppercase',
+    background: 'linear-gradient(135deg, #FFD700 0%, #FFF8DC 50%, #FFD700 100%)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    backgroundClip: 'text',
+    filter: 'drop-shadow(0 0 20px rgba(255, 215, 0, 0.8))',
+    animation: 'titleShine 3s ease-in-out infinite'
+  },
+  formFields: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '15px'
+  },
+  inputGroup: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    padding: '10px 15px',
+    background: 'rgba(0, 0, 0, 0.4)',
+    border: '1px solid #FFD70055',
+    borderRadius: '8px',
+    boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.3)',
+    position: 'relative'
+  },
+  input: {
+    flex: 1,
+    background: 'transparent',
+    border: 'none',
+    outline: 'none',
+    color: '#FFD700',
+    fontSize: '15px',
+    fontWeight: 600,
+    letterSpacing: '0.5px',
+    fontFamily: "'Rajdhani', sans-serif"
+  },
+  toggleBtn: {
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    padding: 0,
+    display: 'flex'
+  },
+  errorMsg: {
+    color: '#ff4d4d',
+    marginTop: '10px',
+    fontSize: '13px',
+    minHeight: '20px'
+  },
+  loginBtn: {
+    marginTop: '25px',
+    width: '100%',
+    padding: '16px',
+    background: 'linear-gradient(135deg, #FFD700 0%, #FFA500 50%, #B8860B 100%)',
+    border: '2px solid #FFD700',
+    borderRadius: '12px',
+    color: '#000',
+    fontFamily: "'Orbitron', sans-serif",
+    fontWeight: 900,
+    fontSize: '16px',
+    cursor: 'pointer',
+    letterSpacing: '3px',
+    transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+    boxShadow: '0 8px 20px rgba(255, 215, 0, 0.4), 0 4px 10px rgba(0, 0, 0, 0.5), inset 0 2px 4px rgba(255, 255, 255, 0.4), inset 0 -2px 4px rgba(0, 0, 0, 0.2)',
+    textTransform: 'uppercase',
+    textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)',
+    position: 'relative',
+    overflow: 'hidden'
+  },
+  footerLinks: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    marginTop: '20px',
+    fontFamily: "'Rajdhani', sans-serif",
+    fontSize: '13px',
+    fontWeight: 500,
+    color: '#888'
+  },
+  footerLabel: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    cursor: 'pointer',
+    opacity: 0.8
+  },
+  checkbox: {
+    accentColor: '#FFD700'
+  },
+  footerSpan: {
+    cursor: 'pointer',
+    opacity: 0.8
+  },
+  statusFooter: {
+    position: 'fixed',
+    bottom: 0,
+    width: '100%',
+    padding: '12px 40px',
+    background: 'rgba(0, 0, 0, 0.85)',
+    borderTop: '1px solid #FFD70033',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    fontFamily: "'Rajdhani', sans-serif",
+    color: '#FFD700',
+    fontSize: '12px',
+    fontWeight: 500,
+    letterSpacing: '1px',
+    textTransform: 'uppercase',
+    zIndex: 3
+  },
+  statusLeft: {
+    display: 'flex',
+    gap: '30px'
+  },
+  statusItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px'
+  },
+  statusDot: {
+    width: '7px',
+    height: '7px',
+    borderRadius: '50%',
+    background: '#FFD700',
+    boxShadow: '0 0 8px #FFD700'
+  },
+  statusDotOffline: {
+    background: '#ff0044',
+    boxShadow: '0 0 8px #ff0044'
+  }
+};
+
+export default EnergyLinkLogin;

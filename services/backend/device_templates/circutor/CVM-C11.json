@@ -1,455 +1,519 @@
 {
-    "polling_interval": 3,
-    "registers": [
-        {
-            "key": "Voltage_L1",
-            "address": 0,
-            "function": 3,
-            "datatype": "int32",
-            "words": 2,
-            "scale": 10,
-            "unit": "V",
-            "description": "แรงดันไฟฟ้าเฟส L1 ต่อ Neutral"
-        },
-        {
-            "key": "Voltage_L2",
-            "address": 16,
-            "function": 3,
-            "datatype": "int32",
-            "words": 2,
-            "scale": 10,
-            "unit": "V",
-            "description": "แรงดันไฟฟ้าเฟส L2 ต่อ Neutral"
-        },
-        {
-            "key": "Voltage_L3",
-            "address": 32,
-            "function": 3,
-            "datatype": "int32",
-            "words": 2,
-            "scale": 10,
-            "unit": "V",
-            "description": "แรงดันไฟฟ้าเฟส L3 ต่อ Neutral"
-        },
-        {
-            "key": "Voltage_L1L2",
-            "address": 62,
-            "function": 3,
-            "datatype": "int32",
-            "words": 2,
-            "scale": 10,
-            "unit": "V",
-            "description": "แรงดันระหว่างเฟส L1-L2"
-        },
-        {
-            "key": "Voltage_L2L3",
-            "address": 64,
-            "function": 3,
-            "datatype": "int32",
-            "words": 2,
-            "scale": 10,
-            "unit": "V",
-            "description": "แรงดันระหว่างเฟส L2-L3"
-        },
-        {
-            "key": "Voltage_L3L1",
-            "address": 66,
-            "function": 3,
-            "datatype": "int32",
-            "words": 2,
-            "scale": 10,
-            "unit": "V",
-            "description": "แรงดันระหว่างเฟส L3-L1"
-        },
-        {
-            "key": "Frequency",
-            "address": 60,
-            "function": 3,
-            "datatype": "int32",
-            "words": 2,
-            "scale": 100,
-            "unit": "Hz",
-            "description": "ความถี่ไฟฟ้า"
-        },
-        {
-            "key": "Current_L1",
-            "address": 2,
-            "function": 3,
-            "datatype": "int32",
-            "words": 2,
-            "scale": 1000,
-            "unit": "A",
-            "description": "กระแสไฟฟ้าเฟส L1"
-        },
-        {
-            "key": "Current_L2",
-            "address": 18,
-            "function": 3,
-            "datatype": "int32",
-            "words": 2,
-            "scale": 1000,
-            "unit": "A",
-            "description": "กระแสไฟฟ้าเฟส L2"
-        },
-        {
-            "key": "Current_L3",
-            "address": 34,
-            "function": 3,
-            "datatype": "int32",
-            "words": 2,
-            "scale": 1000,
-            "unit": "A",
-            "description": "กระแสไฟฟ้าเฟส L3"
-        },
-        {
-            "key": "Neutral_Current",
-            "address": 68,
-            "function": 3,
-            "datatype": "int32",
-            "words": 2,
-            "scale": 1000,
-            "unit": "A",
-            "description": "กระแสในสายนิวทรัล"
-        },
-        {
-            "key": "ActivePower_L1",
-            "address": 4,
-            "function": 3,
-            "datatype": "int32",
-            "words": 2,
-            "scale": 1000,
-            "unit": "W",
-            "description": "กำลังไฟฟ้าจริงเฟส L1"
-        },
-        {
-            "key": "ActivePower_L2",
-            "address": 20,
-            "function": 3,
-            "datatype": "int32",
-            "words": 2,
-            "scale": 1000,
-            "unit": "W",
-            "description": "กำลังไฟฟ้าจริงเฟส L2"
-        },
-        {
-            "key": "ActivePower_L3",
-            "address": 36,
-            "function": 3,
-            "datatype": "int32",
-            "words": 2,
-            "scale": 1000,
-            "unit": "W",
-            "description": "กำลังไฟฟ้าจริงเฟส L3"
-        },
-        {
-            "key": "ActivePower_Total",
-            "address": 48,
-            "function": 3,
-            "datatype": "int32",
-            "words": 2,
-            "scale": 1000,
-            "unit": "W",
-            "description": "กำลังไฟฟ้าจริงรวม"
-        },
-        {
-            "key": "ReactivePower_Total",
-            "address": 50,
-            "function": 3,
-            "datatype": "int32",
-            "words": 2,
-            "scale": 1000,
-            "unit": "var",
-            "description": "กำลังรีแอกทีฟรวม"
-        },
-        {
-            "key": "ApparentPower_Total",
-            "address": 54,
-            "function": 3,
-            "datatype": "int32",
-            "words": 2,
-            "scale": 1000,
-            "unit": "VA",
-            "description": "กำลังปรากฏรวม"
-        },
-        {
-            "key": "PowerFactor_L1",
-            "address": 12,
-            "function": 3,
-            "datatype": "int32",
-            "words": 2,
-            "scale": 100,
-            "unit": "",
-            "description": "Power Factor เฟส L1"
-        },
-        {
-            "key": "CosPhi_L1",
-            "address": 14,
-            "function": 3,
-            "datatype": "int32",
-            "words": 2,
-            "scale": 100,
-            "unit": "",
-            "description": "ค่า Cosφ เฟส L1"
-        },
-        {
-            "key": "PowerFactor_L2",
-            "address": 28,
-            "function": 3,
-            "datatype": "int32",
-            "words": 2,
-            "scale": 100,
-            "unit": "",
-            "description": "Power Factor เฟส L2"
-        },
-        {
-            "key": "CosPhi_L2",
-            "address": 30,
-            "function": 3,
-            "datatype": "int32",
-            "words": 2,
-            "scale": 100,
-            "unit": "",
-            "description": "ค่า Cosφ เฟส L2"
-        },
-        {
-            "key": "PowerFactor_L3",
-            "address": 44,
-            "function": 3,
-            "datatype": "int32",
-            "words": 2,
-            "scale": 100,
-            "unit": "",
-            "description": "Power Factor เฟส L3"
-        },
-        {
-            "key": "CosPhi_L3",
-            "address": 46,
-            "function": 3,
-            "datatype": "int32",
-            "words": 2,
-            "scale": 100,
-            "unit": "",
-            "description": "ค่า Cosφ เฟส L3"
-        },
-        {
-            "key": "PowerFactor_Total",
-            "address": 56,
-            "function": 3,
-            "datatype": "int32",
-            "words": 2,
-            "scale": 100,
-            "unit": "",
-            "description": "Power Factor รวม"
-        },
-        {
-            "key": "CosPhi_Total",
-            "address": 58,
-            "function": 3,
-            "datatype": "int32",
-            "words": 2,
-            "scale": 100,
-            "unit": "",
-            "description": "ค่า Cosφ รวม"
-        },
-        {
-            "key": "THD_Voltage_L1",
-            "address": 70,
-            "function": 3,
-            "datatype": "int32",
-            "words": 2,
-            "scale": 100,
-            "unit": "%",
-            "description": "THD แรงดัน L1"
-        },
-        {
-            "key": "THD_Voltage_L2",
-            "address": 72,
-            "function": 3,
-            "datatype": "int32",
-            "words": 2,
-            "scale": 100,
-            "unit": "%",
-            "description": "THD แรงดัน L2"
-        },
-        {
-            "key": "THD_Voltage_L3",
-            "address": 74,
-            "function": 3,
-            "datatype": "int32",
-            "words": 2,
-            "scale": 100,
-            "unit": "%",
-            "description": "THD แรงดัน L3"
-        },
-        {
-            "key": "THD_Current_L1",
-            "address": 76,
-            "function": 3,
-            "datatype": "int32",
-            "words": 2,
-            "scale": 100,
-            "unit": "%",
-            "description": "THD กระแส L1"
-        },
-        {
-            "key": "THD_Current_L2",
-            "address": 78,
-            "function": 3,
-            "datatype": "int32",
-            "words": 2,
-            "scale": 100,
-            "unit": "%",
-            "description": "THD กระแส L2"
-        },
-        {
-            "key": "THD_Current_L3",
-            "address": 80,
-            "function": 3,
-            "datatype": "int32",
-            "words": 2,
-            "scale": 100,
-            "unit": "%",
-            "description": "THD กระแส L3"
-        },
-        {
-            "key": "MaxDemand_kW",
-            "address": 82,
-            "function": 3,
-            "datatype": "int32",
-            "words": 2,
-            "scale": 1000,
-            "unit": "W",
-            "description": "Maximum demand กำลังจริง"
-        },
-        {
-            "key": "MaxDemand_kVA",
-            "address": 84,
-            "function": 3,
-            "datatype": "int32",
-            "words": 2,
-            "scale": 1000,
-            "unit": "VA",
-            "description": "Maximum demand กำลังปรากฏ"
-        },
-        {
-            "key": "MaxDemand_Iavg",
-            "address": 86,
-            "function": 3,
-            "datatype": "int32",
-            "words": 2,
-            "scale": 1000,
-            "unit": "A",
-            "description": "Maximum demand กระแสเฉลี่ย"
-        },
-        {
-            "key": "MaxDemand_I_L1",
-            "address": 88,
-            "function": 3,
-            "datatype": "int32",
-            "words": 2,
-            "scale": 1000,
-            "unit": "A",
-            "description": "Maximum demand กระแส L1"
-        },
-        {
-            "key": "MaxDemand_I_L2",
-            "address": 90,
-            "function": 3,
-            "datatype": "int32",
-            "words": 2,
-            "scale": 1000,
-            "unit": "A",
-            "description": "Maximum demand กระแส L2"
-        },
-        {
-            "key": "MaxDemand_I_L3",
-            "address": 92,
-            "function": 3,
-            "datatype": "int32",
-            "words": 2,
-            "scale": 1000,
-            "unit": "A",
-            "description": "Maximum demand กระแส L3"
-        },
-        {
-            "key": "ActiveEnergy_kWh",
-            "address": 220,
-            "function": 3,
-            "datatype": "int32",
-            "words": 2,
-            "scale": 1,
-            "unit": "kWh",
-            "description": "พลังงานไฟฟ้าสะสมที่ใช้"
-        },
-        {
-            "key": "Consumed_kvarhL",
-            "address": 224,
-            "function": 3,
-            "datatype": "int32",
-            "words": 2,
-            "scale": 1,
-            "unit": "kvarh",
-            "description": "พลังงานรีแอกทีฟที่ใช้"
-        },
-        {
-            "key": "Consumed_kvarhC",
-            "address": 228,
-            "function": 3,
-            "datatype": "int32",
-            "words": 2,
-            "scale": 1,
-            "unit": "kvarh",
-            "description": "พลังงานรีแอกทีฟที่ใช้"
-        },
-        {
-            "key": "Consumed_kVAh",
-            "address": 232,
-            "function": 3,
-            "datatype": "int32",
-            "words": 2,
-            "scale": 1,
-            "unit": "kVAh",
-            "description": "พลังงานปรากฏที่ใช้"
-        },
-        {
-            "key": "Generated_kWh",
-            "address": 240,
-            "function": 3,
-            "datatype": "int32",
-            "words": 2,
-            "scale": 1,
-            "unit": "kWh",
-            "description": "พลังงานไฟฟ้าสะสมที่ผลิต"
-        },
-        {
-            "key": "Generated_kvarhL",
-            "address": 244,
-            "function": 3,
-            "datatype": "int32",
-            "words": 2,
-            "scale": 1,
-            "unit": "kvarh",
-            "description": "พลังงานรีแอกทีฟที่ผลิต"
-        },
-        {
-            "key": "Generated_kvarhC",
-            "address": 250,
-            "function": 3,
-            "datatype": "int32",
-            "words": 2,
-            "scale": 1,
-            "unit": "kvarh",
-            "description": "พลังงานรีแอกทีฟที่ผลิต"
-        },
-        {
-            "key": "Generated_kVAh",
-            "address": 252,
-            "function": 3,
-            "datatype": "int32",
-            "words": 2,
-            "scale": 1,
-            "unit": "kVAh",
-            "description": "พลังงานปรากฏที่ผลิต"
-        }
-    ]
+  "polling_interval": 3,
+  "registers": [
+    {
+      "key": "Voltage_L1",
+      "address": 0,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 10,
+      "unit": "V",
+      "description": "แรงดันไฟฟ้าเฟส L1 ต่อ Neutral"
+    },
+    {
+      "key": "Voltage_L2",
+      "address": 16,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 10,
+      "unit": "V",
+      "description": "แรงดันไฟฟ้าเฟส L2 ต่อ Neutral"
+    },
+    {
+      "key": "Voltage_L3",
+      "address": 32,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 10,
+      "unit": "V",
+      "description": "แรงดันไฟฟ้าเฟส L3 ต่อ Neutral"
+    },
+    {
+      "key": "Voltage_L1L2",
+      "address": 62,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 10,
+      "unit": "V",
+      "description": "แรงดันระหว่างเฟส L1-L2"
+    },
+    {
+      "key": "Voltage_L2L3",
+      "address": 64,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 10,
+      "unit": "V",
+      "description": "แรงดันระหว่างเฟส L2-L3"
+    },
+    {
+      "key": "Voltage_L3L1",
+      "address": 66,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 10,
+      "unit": "V",
+      "description": "แรงดันระหว่างเฟส L3-L1"
+    },
+    {
+      "key": "Frequency",
+      "address": 60,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 100,
+      "unit": "Hz",
+      "description": "ความถี่ไฟฟ้า"
+    },
+    {
+      "key": "Current_L1",
+      "address": 2,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 1000,
+      "unit": "A",
+      "description": "กระแสไฟฟ้าเฟส L1"
+    },
+    {
+      "key": "Current_L2",
+      "address": 18,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 1000,
+      "unit": "A",
+      "description": "กระแสไฟฟ้าเฟส L2"
+    },
+    {
+      "key": "Current_L3",
+      "address": 34,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 1000,
+      "unit": "A",
+      "description": "กระแสไฟฟ้าเฟส L3"
+    },
+    {
+      "key": "Neutral_Current",
+      "address": 68,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 1000,
+      "unit": "A",
+      "description": "กระแสในสายนิวทรัล"
+    },
+    {
+      "key": "ActivePower_L1",
+      "address": 4,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 1000,
+      "unit": "W",
+      "description": "กำลังไฟฟ้าจริงเฟส L1"
+    },
+    {
+      "key": "ActivePower_L2",
+      "address": 20,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 1000,
+      "unit": "W",
+      "description": "กำลังไฟฟ้าจริงเฟส L2"
+    },
+    {
+      "key": "ActivePower_L3",
+      "address": 36,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 1000,
+      "unit": "W",
+      "description": "กำลังไฟฟ้าจริงเฟส L3"
+    },
+    {
+      "key": "ActivePower_Total",
+      "address": 48,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 1000,
+      "unit": "W",
+      "description": "กำลังไฟฟ้าจริงรวม"
+    },
+    {
+      "key": "ReactivePower_Total",
+      "address": 50,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 1000,
+      "unit": "var",
+      "description": "กำลังรีแอกทีฟรวม"
+    },
+    {
+      "key": "ApparentPower_Total",
+      "address": 54,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 1000,
+      "unit": "VA",
+      "description": "กำลังปรากฏรวม"
+    },
+    {
+      "key": "PowerFactor_L1",
+      "address": 12,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 100,
+      "unit": "",
+      "description": "Power Factor เฟส L1"
+    },
+    {
+      "key": "CosPhi_L1",
+      "address": 14,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 100,
+      "unit": "",
+      "description": "ค่า Cosφ เฟส L1"
+    },
+    {
+      "key": "PowerFactor_L2",
+      "address": 28,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 100,
+      "unit": "",
+      "description": "Power Factor เฟส L2"
+    },
+    {
+      "key": "CosPhi_L2",
+      "address": 30,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 100,
+      "unit": "",
+      "description": "ค่า Cosφ เฟส L2"
+    },
+    {
+      "key": "PowerFactor_L3",
+      "address": 44,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 100,
+      "unit": "",
+      "description": "Power Factor เฟส L3"
+    },
+    {
+      "key": "CosPhi_L3",
+      "address": 46,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 100,
+      "unit": "",
+      "description": "ค่า Cosφ เฟส L3"
+    },
+    {
+      "key": "PowerFactor_Total",
+      "address": 56,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 100,
+      "unit": "",
+      "description": "Power Factor รวม"
+    },
+    {
+      "key": "CosPhi_Total",
+      "address": 58,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 100,
+      "unit": "",
+      "description": "ค่า Cosφ รวม"
+    },
+    {
+      "key": "THD_Voltage_L1",
+      "address": 70,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 100,
+      "unit": "%",
+      "description": "THD แรงดัน L1"
+    },
+    {
+      "key": "THD_Voltage_L2",
+      "address": 72,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 100,
+      "unit": "%",
+      "description": "THD แรงดัน L2"
+    },
+    {
+      "key": "THD_Voltage_L3",
+      "address": 74,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 100,
+      "unit": "%",
+      "description": "THD แรงดัน L3"
+    },
+    {
+      "key": "THD_Current_L1",
+      "address": 76,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 100,
+      "unit": "%",
+      "description": "THD กระแส L1"
+    },
+    {
+      "key": "THD_Current_L2",
+      "address": 78,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 100,
+      "unit": "%",
+      "description": "THD กระแส L2"
+    },
+    {
+      "key": "THD_Current_L3",
+      "address": 80,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 100,
+      "unit": "%",
+      "description": "THD กระแส L3"
+    },
+    {
+      "key": "MaxDemand_kW",
+      "address": 82,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 1000,
+      "unit": "W",
+      "description": "Maximum demand กำลังจริง"
+    },
+    {
+      "key": "MaxDemand_kVA",
+      "address": 84,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 1000,
+      "unit": "VA",
+      "description": "Maximum demand กำลังปรากฏ"
+    },
+    {
+      "key": "MaxDemand_Iavg",
+      "address": 86,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 1000,
+      "unit": "A",
+      "description": "Maximum demand กระแสเฉลี่ย"
+    },
+    {
+      "key": "MaxDemand_I_L1",
+      "address": 88,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 1000,
+      "unit": "A",
+      "description": "Maximum demand กระแส L1"
+    },
+    {
+      "key": "MaxDemand_I_L2",
+      "address": 90,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 1000,
+      "unit": "A",
+      "description": "Maximum demand กระแส L2"
+    },
+    {
+      "key": "MaxDemand_I_L3",
+      "address": 92,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 1000,
+      "unit": "A",
+      "description": "Maximum demand กระแส L3"
+    },
+    {
+      "key": "ActiveEnergy_kWh",
+      "address": 220,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 1,
+      "unit": "kWh",
+      "description": "พลังงานไฟฟ้าสะสมที่ใช้"
+    },
+    {
+      "key": "Consumed_kvarhL",
+      "address": 224,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 1,
+      "unit": "kvarh",
+      "description": "พลังงานรีแอกทีฟที่ใช้"
+    },
+    {
+      "key": "Consumed_kvarhC",
+      "address": 228,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 1,
+      "unit": "kvarh",
+      "description": "พลังงานรีแอกทีฟที่ใช้"
+    },
+    {
+      "key": "Consumed_kVAh",
+      "address": 232,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 1,
+      "unit": "kVAh",
+      "description": "พลังงานปรากฏที่ใช้"
+    },
+    {
+      "key": "Generated_kWh",
+      "address": 240,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 1,
+      "unit": "kWh",
+      "description": "พลังงานไฟฟ้าสะสมที่ผลิต"
+    },
+    {
+      "key": "Generated_kvarhL",
+      "address": 244,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 1,
+      "unit": "kvarh",
+      "description": "พลังงานรีแอกทีฟที่ผลิต"
+    },
+    {
+      "key": "Generated_kvarhC",
+      "address": 250,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 1,
+      "unit": "kvarh",
+      "description": "พลังงานรีแอกทีฟที่ผลิต"
+    },
+    {
+      "key": "Generated_kVAh",
+      "address": 252,
+      "function": 3,
+      "datatype": "int32",
+      "words": 2,
+      "scale": 1,
+      "unit": "kVAh",
+      "description": "พลังงานปรากฏที่ผลิต"
+    },
+    {
+      "key": "Alarm relay 1",
+      "address": 15,
+      "function": 1,
+      "datatype": "int16",
+      "words": 1,
+      "scale": 1,
+      "unit": "-",
+      "inverted": true,
+      "description": "Status of the outputs: 0=Disabled, 1=Enabled"
+    },
+    {
+      "key": "Alarm relay 2",
+      "address": 16,
+      "function": 1,
+      "datatype": "int16",
+      "words": 1,
+      "scale": 1,
+      "unit": "-",
+      "inverted": true,
+      "description": "Status of the outputs: 0=Disabled, 1=Enabled"
+    },
+    {
+      "key": "Digital output 1",
+      "address": 17,
+      "function": 1,
+      "datatype": "int16",
+      "words": 1,
+      "scale": 1,
+      "unit": "-",
+      "inverted": true,
+      "description": "Status of the outputs: 0=Disabled, 1=Enabled"
+    },
+    {
+      "key": "Digital output 2",
+      "address": 18,
+      "function": 1,
+      "datatype": "int16",
+      "words": 1,
+      "scale": 1,
+      "unit": "-",
+      "inverted": true,
+      "description": "Status of the outputs: 0=Disabled, 1=Enabled"
+    },
+    {
+      "key": "Digital input 1",
+      "address": 0,
+      "function": 2,
+      "datatype": "int16",
+      "words": 1,
+      "scale": 1,
+      "unit": "-",
+      "description": "Status of digital inputs: 0=Disabled, 1=Enabled"
+    },
+    {
+      "key": "Digital input 2",
+      "address": 1,
+      "function": 2,
+      "datatype": "int16",
+      "words": 1,
+      "scale": 1,
+      "unit": "-",
+      "description": "Status of digital inputs: 0=Disabled, 1=Enabled"
+    }
+  ]
 }

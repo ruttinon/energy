@@ -4,9 +4,10 @@
         "rule_name": "High Voltage Warning (L1)",
         "metric": "Voltage_L1",
         "operator": ">",
-        "threshold": 140,
+        "threshold": 240,
         "severity": "warning",
-        "message": "Voltage on L1 is too high (> 140V)",
+        "message": "Voltage on L1 is too high (> 240V)",
+        "delay": 5,
         "is_active": true
     },
     {
@@ -14,9 +15,10 @@
         "rule_name": "Low Voltage Warning (L1)",
         "metric": "Voltage_L1",
         "operator": "<",
-        "threshold": 200,
+        "threshold": 180,
         "severity": "warning",
-        "message": "Voltage on L1 is too low (< 200V)",
+        "message": "Voltage on L1 is too low (< 180V)",
+        "delay": 5,
         "is_active": true
     },
     {
@@ -24,29 +26,32 @@
         "rule_name": "High Current Critical (L1)",
         "metric": "Current_L1",
         "operator": ">",
-        "threshold": 10,
+        "threshold": 100,
         "severity": "critical",
-        "message": "Current usage on L1 is critical (> 10A)",
+        "message": "Current usage on L1 is critical (> 100A)",
+        "delay": 0,
         "is_active": true
     },
     {
         "id": 4,
-        "rule_name": "Frequency Too High",
+        "rule_name": "Frequency Protection (High)",
         "metric": "Frequency",
         "operator": ">",
-        "threshold": 51,
-        "severity": "warning",
-        "message": "Frequency is above normal (> 51Hz)",
+        "threshold": 52,
+        "severity": "critical",
+        "message": "Grid frequency exceeded 52Hz",
+        "delay": 1,
         "is_active": true
     },
     {
         "id": 5,
-        "rule_name": "Frequency Too Low",
+        "rule_name": "Frequency Protection (Low)",
         "metric": "Frequency",
         "operator": "<",
-        "threshold": 49,
+        "threshold": 48,
         "severity": "critical",
-        "message": "Frequency dropped below 49Hz",
+        "message": "Grid frequency dropped below 48Hz",
+        "delay": 1,
         "is_active": true
     }
 ]

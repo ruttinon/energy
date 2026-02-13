@@ -1,0 +1,9 @@
+{
+  "prom": {
+    "username": "prom",
+    "salt": "941b8d8e9369f5de",
+    "password_hash": "187f3938dd7ed259ce3db047fc69e2c613ead41e612bfba830e463dbfc363377",
+    "role": "user",
+    "display_name": ""
+  }
+}

@@ -5,21 +5,20 @@
     {
       "id": 1,
       "type": "converter",
-      "protocol": "modbus_tcp",
+      "protocol": "tcp",
       "name": "1",
       "description": "",
       "settings": {
         "host": "61.91.56.190",
         "port": 5502
       },
-      "driver": "Generic_ModbusTCP.json",
       "devices": [
         {
           "id": 5,
           "type": "meter",
           "manufacturer": "socomec",
           "model": "DIRIS A-40",
-          "name": "DIRIS A-40",
+          "name": "3",
           "template_ref": "/services/backend/device_templates/socomec/DIRIS A-40.json",
           "template": "socomec/DIRIS A-40",
           "driver": "DIRIS A-40.json",
@@ -30,8 +29,27 @@
           "modbus_port": 5502,
           "polling_interval": 3,
           "description": ""
+        },
+        {
+          "id": 10,
+          "type": "meter",
+          "manufacturer": "circutor",
+          "model": "CVM-C10",
+          "name": "CVM-C10",
+          "template_ref": "/services/backend/device_templates/circutor/CVM-C10.json",
+          "template": "circutor/CVM-C10",
+          "driver": "CVM-C10.json",
+          "parent": 1,
+          "address": 1,
+          "modbus_slave": 1,
+          "modbus_ip": "61.91.56.190",
+          "modbus_port": 5502
         }
-      ]
+      ],
+      "position": {
+        "x": 100,
+        "y": 100
+      }
     },
     {
       "id": 3,
@@ -50,7 +68,7 @@
           "type": "meter",
           "manufacturer": "circutor",
           "model": "CVM-C4",
-          "name": "CVM-C4",
+          "name": "2",
           "template_ref": "/services/backend/device_templates/circutor/CVM-C4.json",
           "template": "circutor/CVM-C4",
           "driver": "CVM-C4.json",
@@ -61,6 +79,103 @@
           "modbus_port": 10001,
           "polling_interval": 3,
           "description": ""
+        }
+      ],
+      "position": {
+        "x": 350,
+        "y": 100
+      }
+    },
+    {
+      "id": 18,
+      "name": "Modbus TCP Driver",
+      "protocol": "modbus_tcp",
+      "settings": {
+        "host": "192.168.1.56",
+        "port": 502
+      },
+      "devices": [
+        {
+          "id": 21,
+          "type": "meter",
+          "name": "1",
+          "template": "circutor/CVM-C11",
+          "template_ref": "/services/backend/device_templates/circutor/CVM-C11.json",
+          "driver": "CVM-C11.json",
+          "model": "CVM-C11",
+          "manufacturer": "circutor",
+          "modbus_slave": 5,
+          "modbus_ip": "192.168.1.50",
+          "modbus_port": 502,
+          "polling_interval": 5,
+          "parent": 18
+        },
+        {
+          "id": 26,
+          "type": "meter",
+          "name": "CVM-C4_2",
+          "template": "circutor/CVM-C4",
+          "template_ref": "/services/backend/device_templates/circutor/CVM-C4.json",
+          "driver": "CVM-C4.json",
+          "model": "CVM-C4",
+          "manufacturer": "circutor",
+          "modbus_slave": 2,
+          "modbus_ip": "192.168.1.56",
+          "modbus_port": 502,
+          "polling_interval": 3,
+          "parent": 18
+        }
+      ]
+    },
+    {
+      "id": 22,
+      "name": "2",
+      "protocol": "modbus_tcp",
+      "settings": {
+        "host": "192.168.1.55",
+        "port": 502
+      },
+      "devices": [
+        {
+          "id": 23,
+          "type": "meter",
+          "name": "5",
+          "template": "socomec/DIRIS A-30",
+          "template_ref": "/services/backend/device_templates/socomec/DIRIS A-30.json",
+          "driver": "DIRIS A-30.json",
+          "model": "DIRIS A-30",
+          "manufacturer": "socomec",
+          "modbus_slave": 15,
+          "modbus_ip": "192.168.1.55",
+          "modbus_port": 502,
+          "polling_interval": 3,
+          "parent": 22
+        }
+      ]
+    },
+    {
+      "id": 24,
+      "name": "3",
+      "protocol": "tcp",
+      "settings": {
+        "host": "192.168.1.59",
+        "port": 10001
+      },
+      "devices": [
+        {
+          "id": 25,
+          "type": "meter",
+          "name": "CVM-C11_1",
+          "template": "circutor/CVM-C11",
+          "template_ref": "/services/backend/device_templates/circutor/CVM-C11.json",
+          "driver": "CVM-C11.json",
+          "model": "CVM-C11",
+          "manufacturer": "circutor",
+          "modbus_slave": 5,
+          "modbus_ip": "192.168.1.50",
+          "modbus_port": 10001,
+          "polling_interval": 5,
+          "parent": 24
         }
       ]
     }

@@ -1,0 +1,17 @@
+Files in this package:
+- app-release.aab (signed Android App Bundle) - path: app/build/outputs/bundle/release/app-release.aab
+- my-release-key.jks (keystore used to sign the bundle)
+- keystore.properties (contains keystore file name and passwords)
+
+Important:
+1. Back up the keystore (my-release-key.jks) and password securely. Without it you cannot update the app in Play Console.
+2. In Play Console, create an app and upload the AAB under the appropriate release track (internal/testing/production).
+3. Consider enabling Google Play App Signing and follow Play Console prompts to upload your key if desired.
+4. Do NOT commit the keystore or keystore.properties to source control. They are already added to .gitignore.
+
+Keystore details:
+- alias: energylinkkey
+- storePassword: Energylink2026!
+- keyPassword: Energylink2026!
+
+If you want, I can create a zip for download with the aab and keystore, or help you upload to Play Console manually.

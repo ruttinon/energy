@@ -153,7 +153,7 @@
     },
     { 
       "key": "Frequency",
-      "address": 18441,
+      "address": 36871,
       "function": 3,
       "datatype": "int32",
       "words": 2,

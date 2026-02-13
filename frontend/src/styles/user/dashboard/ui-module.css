@@ -1,0 +1,74 @@
+/* ============================================================
+   UI MODULE - WHITE-GOLD PREMIUM THEME
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800&display=swap');
+
+/* ===================== WRAPPER ===================== */
+.cards {
+  background: #f8fafc !important; /* Slate-50 */
+  min-height: calc(100vh - 140px);
+}
+
+.card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  position: relative;
+  color: #1e293b;
+}
+
+/* ===================== CONTROL BUTTONS ===================== */
+.control-btn,
+.pbtn {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #64748b;
+  padding: 12px 24px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 700;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  font-size: 14px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  font-family: 'Orbitron', sans-serif;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-icon {
+  font-size: 16px;
+  transition: transform 0.3s ease;
+}
+
+.pbtn:hover .btn-icon {
+  transform: scale(1.2);
+}
+
+.pbtn.active .btn-icon {
+  transform: scale(1.1);
+}
+
+.control-btn:hover:not(.active),
+.pbtn:hover:not(.active) {
+  border-color: #eab308;
+  color: #ca8a04;
+  background: #fffbeb;
+  box-shadow: 0 4px 12px rgba(234, 179, 8, 0.15);
+  transform: translateY(-1px);
+}
+
+.control-btn.active,
+.pbtn.active {
+  background: linear-gradient(135deg, #eab308 0%, #ca8a04 100%);
+  color: #ffffff;
+  border-color: #ca8a04;
+  box-shadow: 0 4px 12px rgba(234, 179, 8, 0.3);
+}

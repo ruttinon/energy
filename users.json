@@ -1,0 +1,21 @@
+{
+  "admin": {
+    "username": "admin",
+    "password": "1234",
+    "role": "admin",
+    "allowed_projects": [],
+    "display_name": "p",
+    "phone": "",
+    "email": "",
+    "notify": {}
+  },
+  "user": {
+    "username": "user",
+    "password": "1234",
+    "role": "user",
+    "display_name": "prom",
+    "phone": "0602626262",
+    "email": "energylinksacada@gmail.com",
+    "notify": {}
+  }
+}

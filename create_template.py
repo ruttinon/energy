@@ -4,7 +4,7 @@ import os
 # Create directory if not exists
 os.makedirs("services/backend/api/report_builder/templates", exist_ok=True)
 
-# Create a sample dataframe
+#
 df = pd.DataFrame({
     'Parameter': ['Total Energy', 'Total Cost'],
     'Value': [0, 0]

@@ -5,12 +5,13 @@ This should run as a separate thread or scheduled task
 
 import time
 import threading
-from .alert_engine import check_offline_devices
 import os
 import json
+from .alert_engine import check_offline_devices, check_alerts
+from services.backend.shared_state import READINGS
 
 # Check interval (seconds)
-CHECK_INTERVAL = 30
+CHECK_INTERVAL = 5
 
 # Path to active project file
 # Try services/backend/active_project.json first
@@ -19,10 +20,9 @@ ACTIVE_PROJECT_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), ".
 def get_active_project():
     """Get currently active project ID"""
     try:
-        if os.path.exists(ACTIVE_PROJECT_PATH):
-            with open(ACTIVE_PROJECT_PATH, 'r') as f:
-                data = json.load(f)
-                return data.get('active')
+        from services.backend.shared_state import load_active
+        d = load_active()
+        return d.get('active')
     except:
         pass
     return None
@@ -37,11 +37,24 @@ def monitor_loop():
             project_id = get_active_project()
             
             if project_id:
-                print(f"[Offline Monitor] Checking devices for project: {project_id}")
+                # 1. Check Offline Status
+                # print(f"[Offline Monitor] Checking devices for project: {project_id}")
                 check_offline_devices(project_id)
+                
+                # 2. Check Alert Rules (Rule Engine)
+                try:
+                    readings = READINGS.get(project_id, {})
+                    if readings:
+                        for device_id, data in readings.items():
+                            values = data.get('values', {})
+                            if values:
+                                check_alerts(values, device_id, project_id, dry_run=False)
+                except Exception as e:
+                    print(f"[Monitor] Rule checking error: {e}")
+                    
             else:
-                print("[Offline Monitor] No active project, checking default")
-                check_offline_devices(None)
+                # print("[Offline Monitor] No active project, checking default")
+                pass
                 
         except Exception as e:
             print(f"[Offline Monitor] Error: {e}")
